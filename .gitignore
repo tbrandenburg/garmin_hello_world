@@ -53,3 +53,21 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Connect IQ build artifacts
+bin/
+dist/
+build/
+target/
+*.prg
+*.iq
+
+# IDE and system files
+.settings/
+.project
+.classpath
+.vscode/
+.DS_Store
+
+# Developer keys (critical)
+.keys/
