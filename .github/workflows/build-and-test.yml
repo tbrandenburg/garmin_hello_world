@@ -8,7 +8,8 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    # Use Ubuntu 22.04 for webkit2gtk-4.0 compatibility with SDK Manager
+    runs-on: ubuntu-22.04
     
     steps:
       - name: Checkout Code
@@ -27,7 +28,8 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb shellcheck wget unzip libsecret-1-0 libwebkitgtk-6.0-dev libgtk-3-0
+          # SDK Manager requires webkit2gtk-4.0 which is available in Ubuntu 22.04
+          sudo apt-get install -y xvfb shellcheck wget unzip libsecret-1-0 libwebkit2gtk-4.0-37 libgtk-3-0
       
       - name: Setup Developer Key
         run: |
