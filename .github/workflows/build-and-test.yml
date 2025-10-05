@@ -8,10 +8,11 @@ on:
 
 env:
   # SDK Version Strategy:
-  # Use semver patterns: ^7.0.0 (latest 7.x), ^8.0.0 (latest 8.x), or exact version: 7.3.1
+  # Use semver patterns: ^7.0.0 (latest 7.x), ^8.0.0 (latest 8.x), or exact version: 8.3.0
   # Note: "latest" is NOT supported by the CLI tool
   # See docs/SDK_SETUP.md for details
-  CONNECTIQ_SDK_VERSION: "^7.0.0"
+  # Updated to match local development environment (SDK 8.3.0)
+  CONNECTIQ_SDK_VERSION: "^8.0.0"
 
 jobs:
   build-and-test:
