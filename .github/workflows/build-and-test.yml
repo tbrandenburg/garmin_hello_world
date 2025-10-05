@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  # SDK Version Strategy:
+  # - "latest" = Always use newest SDK (aggressive, may introduce breaking changes)
+  # - "^7.0.0" = Latest 7.x (recommended for stability)
+  # - "7.3.1" = Exact version (maximum reproducibility)
+  # See docs/SDK_VERSION_STRATEGY.md for details
+  CONNECTIQ_SDK_VERSION: "^7.0.0"
+
 jobs:
   build-and-test:
     # Use latest Ubuntu - CLI SDK Manager doesn't need GUI libs!
@@ -21,9 +29,11 @@ jobs:
           path: |
             ~/connectiq-sdk
             ~/.Garmin/ConnectIQ/Sdks
-          key: connectiq-sdk-manager-${{ runner.os }}-v2
+          # Include SDK version in cache key so different versions use different caches
+          key: connectiq-sdk-${{ runner.os }}-${{ env.CONNECTIQ_SDK_VERSION }}-v3
           restore-keys: |
-            connectiq-sdk-manager-${{ runner.os }}-
+            connectiq-sdk-${{ runner.os }}-${{ env.CONNECTIQ_SDK_VERSION }}-
+            connectiq-sdk-${{ runner.os }}-
       
       - name: Install Dependencies
         run: |
@@ -40,21 +50,38 @@ jobs:
         run: |
           # Uses CLI SDK Manager (lindell/connect-iq-sdk-manager-cli)
           # Pure CLI tool - no GUI libraries needed!
-          # Downloads latest compatible SDK version
+          # Version controlled by CONNECTIQ_SDK_VERSION env var (see top of workflow)
           # Cache speeds up subsequent runs significantly
+          
+          echo "Target SDK version: $CONNECTIQ_SDK_VERSION"
+          
           if [ ! -d ~/connectiq-sdk/bin ]; then
             echo "SDK not cached, running CLI SDK Manager..."
             ./scripts/setup_sdk.sh
           else
             echo "SDK found in cache, skipping installation"
+            # Show cached SDK version
+            if [ -f ~/connectiq-sdk/bin/monkeyc ]; then
+              echo "Cached SDK version:"
+              ~/connectiq-sdk/bin/monkeyc --version || echo "Could not determine version"
+            fi
           fi
+          
           echo "$HOME/connectiq-sdk/bin" >> $GITHUB_PATH
           echo "SDK_HOME=$HOME/connectiq-sdk" >> $GITHUB_ENV
       
       - name: Validate Environment
         run: |
+          echo "=== SDK Information ==="
+          monkeyc --version
+          echo ""
+          echo "=== Environment Validation ==="
           make validate
+          echo ""
+          echo "=== Supported Devices ==="
           make devices
+          echo ""
+          echo "=== Build System Version ==="
           make version
       
       - name: Build All Devices

@@ -20,9 +20,30 @@ This is a basic Connect IQ watch app that displays "Hello World!" on your Garmin
 
 ### Prerequisites
 
+**Option 1: CLI SDK Manager (Recommended - No GUI Required)**
+
+```bash
+# macOS - installs latest SDK by default
+./scripts/setup_sdk_macos.sh
+
+# Linux - installs latest SDK by default
+./scripts/setup_sdk.sh
+
+# Optional: Pin specific SDK version
+# export CONNECTIQ_SDK_VERSION="^7.0.0"  # Or "7.3.1", "latest", etc.
+
+# Add SDK to PATH
+export SDK_HOME="$HOME/connectiq-sdk"
+export PATH="$SDK_HOME/bin:$PATH"
+```
+
+**Option 2: GUI SDK Manager**
+
 1. Install Connect IQ SDK Manager from [developer.garmin.com/connect-iq](https://developer.garmin.com/connect-iq)
 2. Install Connect IQ SDK and Simulator via SDK Manager
 3. Set up environment variables (see [docs/BUILD.md](docs/BUILD.md) for details)
+
+**See [docs/SDK_SETUP.md](docs/SDK_SETUP.md) for detailed setup instructions.**
 
 ### Building
 
@@ -47,6 +68,7 @@ monkeydo bin/garmin_hello_world_fr265.prg fr265
 
 ## Documentation
 
+- **[docs/SDK_SETUP.md](docs/SDK_SETUP.md)** - Complete SDK setup guide (CLI Manager, versions, CI/CD) ⭐
 - **[docs/BUILD.md](docs/BUILD.md)** - Detailed build and installation instructions
 - **[docs/TESTING.md](docs/TESTING.md)** - Testing guide and framework documentation
 - **[docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md)** - Technical implementation details
