@@ -57,42 +57,19 @@ jobs:
           GARMIN_USERNAME: ${{ secrets.GARMIN_USERNAME }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
         run: |
-          # Uses CLI SDK Manager (lindell/connect-iq-sdk-manager-cli)
-          # Pure CLI tool - no GUI libraries needed!
-          # Version controlled by CONNECTIQ_SDK_VERSION env var (see top of workflow)
-          # Cache speeds up subsequent runs significantly
-          # Credentials are scoped to this step only for security
-          
-          echo "Target SDK version: $CONNECTIQ_SDK_VERSION"
-          
           if [ ! -d ~/connectiq-sdk/bin ]; then
-            echo "SDK not cached, running full setup..."
+            echo "Setting up Connect IQ SDK $CONNECTIQ_SDK_VERSION..."
             ./scripts/setup_sdk.sh
           else
-            echo "SDK found in cache"
-            if [ -f ~/connectiq-sdk/bin/monkeyc ]; then
-              echo "Cached SDK version:"
-              ~/connectiq-sdk/bin/monkeyc --version || echo "Could not determine version"
-            fi
+            echo "✓ SDK cached ($(~/connectiq-sdk/bin/monkeyc --version 2>&1 | head -n1))"
             
-            # Always verify and download devices if missing (they may not be cached)
+            # Verify devices exist, download if missing
             if [ ! -d ~/.Garmin/ConnectIQ/Devices/fr265 ]; then
-              echo "Devices not found in cache, downloading..."
-              
-              # Install CLI SDK Manager if not present
-              if [ ! -f /tmp/connect-iq-sdk-manager ]; then
-                curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh -s -- -b /tmp
-              fi
-              
-              # Download devices
-              /tmp/connect-iq-sdk-manager device download --device fr265 --device fenix7 --device epix2 --device venu2 || {
-                echo "Warning: Bulk device download failed, trying individually..."
-                for device in fr265 fenix7 epix2 venu2; do
-                  /tmp/connect-iq-sdk-manager device download --device "${device}" || echo "Warning: Could not download ${device}"
-                done
-              }
+              echo "Downloading devices..."
+              curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh -s -- -b /tmp >/dev/null 2>&1
+              /tmp/connect-iq-sdk-manager device download --device fr265 --device fenix7 --device epix2 --device venu2 2>&1 | grep -v "^INFO" || true
             else
-              echo "Devices found in cache"
+              echo "✓ Devices cached (4 devices available)"
             fi
           fi
           
@@ -101,60 +78,9 @@ jobs:
       
       - name: Validate Environment
         run: |
-          echo "=== SDK Information ==="
-          monkeyc --version
-          echo ""
-          echo "=== Environment Validation ==="
+          echo "Validating build environment..."
           make validate
-          echo ""
-          echo "=== Supported Devices ==="
-          make devices
-          echo ""
-          echo "=== Build System Version ==="
           make version
-      
-      - name: Discover Available Devices
-        run: |
-          echo "=== Searching for devices directory ==="
-          
-          # Find devices directory
-          DEVICES_DIR=""
-          if [ -d "$HOME/.Garmin/ConnectIQ/Devices" ]; then
-            DEVICES_DIR="$HOME/.Garmin/ConnectIQ/Devices"
-            echo "Found devices at: $DEVICES_DIR"
-          elif [ -d "$SDK_HOME/devices" ]; then
-            DEVICES_DIR="$SDK_HOME/devices"
-            echo "Found devices at: $DEVICES_DIR"
-          else
-            echo "Devices directory not found. Checking common locations:"
-            echo "  ✗ $HOME/.Garmin/ConnectIQ/Devices"
-            echo "  ✗ $SDK_HOME/devices"
-            echo ""
-            echo "Listing all directories under SDK:"
-            find "$SDK_HOME" -maxdepth 2 -type d 2>/dev/null | head -20
-            DEVICES_DIR=""
-          fi
-          
-          echo ""
-          if [ -n "$DEVICES_DIR" ] && [ -d "$DEVICES_DIR" ]; then
-            echo "=== Available devices (first 30) ==="
-            ls -1 "$DEVICES_DIR" | head -30
-            echo ""
-            echo "=== Checking manifest targets ==="
-            for device in fr265 fenix7 epix2 venu2; do
-              if [ -d "$DEVICES_DIR/$device" ]; then
-                echo "✓ $device exists"
-              else
-                echo "✗ $device NOT FOUND"
-                echo "   Searching for similar names..."
-                ls -1 "$DEVICES_DIR" | grep -i "$(echo $device | sed 's/[0-9]//g')" | head -5 || echo "   No matches found"
-              fi
-            done
-          else
-            echo "=== WARN: Devices not found ==="
-            echo "Builds will fail if devices are not available."
-            echo "The setup script should have installed them."
-          fi
       
       - name: Build All Devices
         run: make buildall -j4
