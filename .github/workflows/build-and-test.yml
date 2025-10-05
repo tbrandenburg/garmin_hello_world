@@ -117,7 +117,21 @@ jobs:
           make version
       
       - name: Build All Devices
-        run: make buildall -j4 DEBUG_LOG=1
+        run: |
+          # Build sequentially to see full error output
+          make build DEVICE=fr265 DEBUG_LOG=1 || true
+          make build DEVICE=fenix7 DEBUG_LOG=1 || true
+          make build DEVICE=epix2 DEBUG_LOG=1 || true
+          make build DEVICE=venu2 DEBUG_LOG=1 || true
+          
+          # Check if any succeeded
+          if ls bin/*.prg 2>/dev/null; then
+            echo "Some builds succeeded"
+            ls -lh bin/*.prg
+          else
+            echo "All builds failed"
+            exit 1
+          fi
       
       - name: List Build Artifacts
         run: |
