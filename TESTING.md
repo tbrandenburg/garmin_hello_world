@@ -17,6 +17,16 @@ DEVICE=fenix7 make test
 make test-all
 ```
 
+**Simulator Management** (macOS):
+
+The test system automatically manages the Connect IQ Simulator:
+- **Auto-start**: If the simulator isn't running, it will be started automatically
+- **Detection**: Checks if the simulator is already running before starting
+- **Manual control**: Use `./scripts/ensure_simulator.sh` to check status
+- **Force restart**: Use `./scripts/ensure_simulator.sh --restart` to restart the simulator
+
+No manual simulator management is needed - just run `make test`!
+
 ### Test Output
 
 Tests produce standardized output markers:
@@ -219,10 +229,12 @@ var testSuites = [
 **Problem:** Simulator doesn't close after tests
 
 **Solutions:**
+- Restart the simulator: `./scripts/ensure_simulator.sh --restart`
 - Check TestApp timer is configured correctly
 - Ensure `Sys.exit()` is called after tests complete
 - Verify no infinite loops in test logic
 - Check simulator logs for exceptions
+- Try manually starting simulator before running tests
 
 ### No Test Output
 

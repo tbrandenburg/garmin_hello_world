@@ -52,6 +52,17 @@ print_warning() {
 # Ensure logs directory exists
 mkdir -p "${LOGS_DIR}"
 
+# Ensure simulator is running (macOS only)
+if [[ "$(uname)" == "Darwin" ]]; then
+    if [[ -f "${SCRIPT_DIR}/ensure_simulator.sh" ]]; then
+        if ! "${SCRIPT_DIR}/ensure_simulator.sh"; then
+            print_warning "Failed to start simulator automatically"
+            print_warning "Please ensure Connect IQ Simulator is running manually"
+        fi
+        echo ""
+    fi
+fi
+
 print_info "Running tests for device: ${DEVICE}"
 print_info "Log file: ${LOG_FILE}"
 echo ""
