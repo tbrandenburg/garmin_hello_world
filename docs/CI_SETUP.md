@@ -181,20 +181,18 @@ ls ~/.Garmin/ConnectIQ/Devices/
 
 ### Linux-Specific Build Issues
 
-**Problem:** Builds fail with "critical error" on Linux but work on macOS
+**Problem:** Builds fail with "critical error" on Linux when using parallel builds
 
-**Cause:** Linux monkeyc compiler requires debug symbols flag (`-g`) and
-cannot handle parallel builds (`-j` flag)
+**Root Cause:** The Linux monkeyc compiler cannot handle parallel builds (`-j` flag).
+The `-g` debug flag was initially thought to be required, but testing proved it was
+only needed when using parallel builds.
 
-**Solution:** Our Makefile includes `-g` in `DEBUG_FLAGS` by default:
-```makefile
-DEBUG_FLAGS ?= $(COMMON_FLAGS) -g  # -g required for Linux builds
-```
+**Solution:** CI uses sequential builds (no `-j` flag) for reliability on Linux.
+This works perfectly without requiring the `-g` flag.
 
-CI uses sequential builds (no `-j` flag) for reliability on Linux.
-
-**Note:** `BUILD_MODE=release` may fail on Linux because release flags don't
-include `-g` by default.
+**Discovery:** After switching to sequential builds, we verified that the `-g` flag
+is not actually needed on Linux. The compiler works fine without debug symbols when
+building sequentially.
 
 ### Builds Work Locally But Fail in CI
 
