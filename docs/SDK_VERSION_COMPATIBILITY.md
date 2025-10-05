@@ -24,7 +24,7 @@ Connect IQ SDK **device identifiers changed between SDK versions**, specifically
 - SDK: `~/connectiq-sdk/`
 - Devices: `~/connectiq-sdk/devices/` or `~/.Garmin/ConnectIQ/devices/`
 
-### The Fix
+### The Fix (Part 1: SDK Version)
 
 Updated `.github/workflows/build-and-test.yml` to use SDK 8.x:
 
@@ -35,6 +35,35 @@ env:
 ```
 
 This ensures CI uses the same SDK version as local development.
+
+### The Fix (Part 2: Device Downloads)
+
+**Additional Discovery:** The Connect IQ CLI SDK Manager downloads **SDKs and devices separately**!
+
+Even with SDK 8.3.0 installed, builds were still failing with:
+```
+ERROR: Invalid device id specified: 'fenix7'.
+```
+
+Because the devices directory was **empty**. The CLI SDK Manager requires explicit device installation.
+
+**Updated setup scripts** to include device downloads:
+
+```bash
+# Download each required device
+for device in fr265 fenix7 epix2 venu2; do
+    /tmp/connect-iq-sdk-manager device install "${device}"
+done
+```
+
+Now the setup scripts:
+1. Install SDK Manager CLI
+2. Accept license
+3. Login to Garmin
+4. Download SDK (e.g., 8.3.0)
+5. **Download devices** (NEW!)
+6. Create symlink
+7. **Verify devices installed** (NEW!)
 
 ### Verifying Device Availability
 
@@ -73,8 +102,37 @@ When device IDs in `manifest.xml` work locally but fail in CI:
 3. **Cache SDK in CI** to speed up builds (already implemented)
 4. **Keep local and CI environments in sync**
 
+### Troubleshooting
+
+**Error: "Invalid device id specified"**
+
+1. Check SDK version matches between local and CI
+2. Verify devices are installed:
+   ```bash
+   # Linux/CI
+   ls ~/.Garmin/ConnectIQ/Devices/
+   
+   # macOS
+   ls ~/Library/Application\ Support/Garmin/ConnectIQ/Devices/
+   ```
+3. If devices missing, run device install:
+   ```bash
+   connect-iq-sdk-manager device install fr265
+   connect-iq-sdk-manager device install fenix7
+   connect-iq-sdk-manager device install epix2
+   connect-iq-sdk-manager device install venu2
+   ```
+
+**Devices directory not found**
+
+The CLI SDK Manager stores devices separately from the SDK:
+- **Linux**: `~/.Garmin/ConnectIQ/Devices/`
+- **macOS**: `~/Library/Application Support/Garmin/ConnectIQ/Devices/`
+- **NOT**: `$SDK_HOME/devices/` (SDK directory doesn't contain devices)
+
 ### References
 
 - [Connect IQ SDK Releases](https://developer.garmin.com/connect-iq/sdk/)
 - [Compatible Devices](https://developer.garmin.com/connect-iq/compatible-devices/)
 - [Device API Levels Discussion](https://forums.garmin.com/developer/connect-iq/f/discussion/354168/device-api-levels)
+- [CLI SDK Manager (lindell/connect-iq-sdk-manager-cli)](https://github.com/lindell/connect-iq-sdk-manager-cli)
