@@ -1,16 +1,17 @@
-# Garmin Hello World App
+# Mini Flappy for Garmin
 
-A simple Hello World application for Garmin smartwatches using the Connect IQ platform.
+A lightweight Flappy Bird-inspired game for Garmin smartwatches built with the Connect IQ platform.
 
 ![20E82F67-CFDA-4BEC-B904-C16F8ACCB0BF](https://github.com/user-attachments/assets/71851cea-1c31-49b8-97d1-54f9af331be9)
 
 ## Overview
 
-This is a basic Connect IQ watch app that displays "Hello World!" on your Garmin watch. It's designed as a starting point for learning Connect IQ development and includes a complete build chain.
+Steer a tiny bird through an endless stream of pipes using the watch's select button or touch screen. The project is intentionally simple so you can see how to structure a mini-game in Monkey C while still shipping with a complete build chain.
 
 ## Features
 
-- ✅ Simple "Hello World" display
+- ✅ One-button/tap gameplay that mimics Flappy Bird
+- ✅ Lightweight game loop that runs entirely inside a single view
 - ✅ Works on Forerunner 265, Fenix 7, Epix 2, and Venu 2
 - ✅ Proper Connect IQ project structure
 - ✅ Build scripts for easy compilation
@@ -104,12 +105,12 @@ garmin_hello_world/
 
 ## Next Steps
 
-After running the Hello World app:
+After playing a few rounds:
 
-1. Modify the message in `resources/strings/strings.xml`
-2. Update the UI in `source/views/MainView.mc`
-3. Add new features by extending the delegate and view classes
-4. Read WARP.md for comprehensive development guidance
+1. Tweak physics constants in `source/views/MainView.mc` to change the game's difficulty.
+2. Replace the simple graphics with sprite sheets or vector art using the `resources/drawables/` folder.
+3. Expand the game loop with bonus pickups, high score persistence, or vibration feedback in `MainDelegate.mc`.
+4. Read WARP.md for comprehensive development guidance.
 
 ## Resources
 

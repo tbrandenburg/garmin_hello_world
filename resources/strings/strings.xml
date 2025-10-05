@@ -1,4 +1,6 @@
 <strings>
-    <string id="AppName">Hello World</string>
-    <string id="HelloWorld">Hello World!</string>
+    <string id="AppName">Mini Flappy</string>
+    <string id="GameOver">Game Over</string>
+    <string id="RestartPrompt">Press select to restart</string>
+    <string id="TapToFlap">Tap or press select to flap</string>
 </strings>

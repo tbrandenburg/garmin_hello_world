@@ -3,7 +3,10 @@ using Toybox.System as Sys;
 
 class HelloWorldDelegate extends Ui.BehaviorDelegate {
 
-    function initialize() {
+    var view;
+
+    function initialize(viewInstance) {
+        view = viewInstance;
         BehaviorDelegate.initialize();
     }
 
@@ -16,7 +19,9 @@ class HelloWorldDelegate extends Ui.BehaviorDelegate {
 
     // Handle the select/enter button press
     function onSelect() {
-        Sys.println("Select button pressed");
+        if (view != null) {
+            view.handleInput();
+        }
         return true;
     }
 

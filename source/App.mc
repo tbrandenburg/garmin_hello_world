@@ -17,7 +17,8 @@ class HelloWorldApp extends App.AppBase {
 
     // Return the initial view of your application here
     function getInitialView() {
-        return [ new HelloWorldView(), new HelloWorldDelegate() ];
+        var view = new HelloWorldView();
+        return [ view, new HelloWorldDelegate(view) ];
     }
 
 }
