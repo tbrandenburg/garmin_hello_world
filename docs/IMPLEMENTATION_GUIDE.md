@@ -168,7 +168,7 @@ Make executable: `chmod +x scripts/setup_sdk.sh`
 
 ## 📋 Phases 16-19: Documentation
 
-### TESTING.md (New File)
+### docs/TESTING.md (New File)
 
 ```markdown
 # Testing Guide
@@ -306,10 +306,10 @@ make lint
 
 ```bash
 # Commit remaining work
-git add scripts/ .github/ TESTING.md
+git add scripts/ .github/ docs/TESTING.md
 git commit -m "chore: add test execution scripts and CI/CD workflow"
 
-git add README.md WARP.md
+git add README.md WARP.md docs/
 git commit -m "docs: update documentation with test framework and CI details"
 
 # Push branch

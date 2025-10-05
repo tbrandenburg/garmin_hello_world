@@ -157,7 +157,7 @@ if [ "$ERRORS" -eq 0 ]; then
 else
     printf "${C_RED}${ERR} $ERRORS check(s) failed${C_RESET}\n\n"
     echo "Please fix the issues above before building."
-    echo "See BUILD.md or WARP.md for setup instructions."
+    echo "See docs/BUILD.md or WARP.md for setup instructions."
     echo ""
     exit 1
 fi

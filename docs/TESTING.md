@@ -289,6 +289,6 @@ Tests run automatically on GitHub Actions for every push and pull request.
 
 ## Additional Resources
 
-- See `IMPLEMENTATION_GUIDE.md` for technical details
-- See `WARP.md` for Connect IQ development best practices
-- See `README.md` for quick start guide
+- See [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) for technical details
+- See [../WARP.md](../WARP.md) for Connect IQ development best practices
+- See [../README.md](../README.md) for quick start guide

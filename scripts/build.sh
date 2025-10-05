@@ -34,7 +34,7 @@ echo -e "${GREEN}=== Garmin Hello World Build Script ===${NC}\n"
 if ! command -v monkeyc &> /dev/null; then
     echo -e "${RED}Error: monkeyc command not found!${NC}"
     echo "Please install Connect IQ SDK and add it to your PATH."
-    echo "See BUILD.md for setup instructions."
+    echo "See docs/BUILD.md for setup instructions."
     exit 1
 fi
 
