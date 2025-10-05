@@ -89,6 +89,27 @@ jobs:
           echo "$HOME/connectiq-sdk/bin" >> $GITHUB_PATH
           echo "SDK_HOME=$HOME/connectiq-sdk" >> $GITHUB_ENV
       
+      - name: Verify Devices Installed
+        run: |
+          echo "Checking for required devices..."
+          DEVICES_DIR="$HOME/.Garmin/ConnectIQ/Devices"
+          
+          if [ ! -d "$DEVICES_DIR" ]; then
+            echo "ERROR: Devices directory not found at $DEVICES_DIR"
+            exit 1
+          fi
+          
+          for device in fr265 fenix7 epix2 venu2; do
+            if [ -d "$DEVICES_DIR/$device" ]; then
+              echo "✓ $device"
+            else
+              echo "✗ $device MISSING"
+              exit 1
+            fi
+          done
+          
+          echo "All devices verified!"
+      
       - name: Validate Environment
         run: |
           echo "Validating build environment..."
