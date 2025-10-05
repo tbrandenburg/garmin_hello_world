@@ -82,11 +82,14 @@ echo ""
 echo "[4/6] Downloading required devices..."
 echo "      Target devices: fr265, fenix7, epix2, venu2"
 
-# Download each device
-for device in fr265 fenix7 epix2 venu2; do
-    echo "      Downloading ${device}..."
-    /tmp/connect-iq-sdk-manager device install "${device}" || echo "      Warning: Could not install ${device}"
-done
+# Download all devices at once using the correct command
+/tmp/connect-iq-sdk-manager device download --device fr265 --device fenix7 --device epix2 --device venu2 || {
+    echo "      Warning: Device download failed, trying one by one..."
+    for device in fr265 fenix7 epix2 venu2; do
+        echo "      Downloading ${device}..."
+        /tmp/connect-iq-sdk-manager device download --device "${device}" || echo "      Warning: Could not download ${device}"
+    done
+}
 
 echo "      Devices downloaded"
 echo ""

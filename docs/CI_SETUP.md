@@ -79,9 +79,8 @@ ls: cannot access '/home/runner/connectiq-sdk/devices': No such file or director
 The setup scripts now explicitly download each device:
 
 ```bash
-for device in fr265 fenix7 epix2 venu2; do
-    /tmp/connect-iq-sdk-manager device install "${device}"
-done
+/tmp/connect-iq-sdk-manager device download \
+  --device fr265 --device fenix7 --device epix2 --device venu2
 ```
 
 ### Device Storage Locations
@@ -202,10 +201,10 @@ curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/mas
 connect-iq-sdk-manager login
 
 # Install devices
-connect-iq-sdk-manager device install fr265
-connect-iq-sdk-manager device install fenix7
-connect-iq-sdk-manager device install epix2
-connect-iq-sdk-manager device install venu2
+connect-iq-sdk-manager device download --device fr265
+connect-iq-sdk-manager device download --device fenix7
+connect-iq-sdk-manager device download --device epix2
+connect-iq-sdk-manager device download --device venu2
 
 # Verify
 connect-iq-sdk-manager device list
