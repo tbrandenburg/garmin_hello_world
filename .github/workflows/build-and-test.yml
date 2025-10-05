@@ -117,7 +117,7 @@ jobs:
           make version
       
       - name: Build All Devices
-        run: make buildall -j4
+        run: make buildall -j4 DEBUG_LOG=1
       
       - name: List Build Artifacts
         run: |

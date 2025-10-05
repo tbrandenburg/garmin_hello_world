@@ -72,9 +72,14 @@ JOBS ?= $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/de
 
 # Compiler flags
 COMMON_FLAGS ?= -w
-DEBUG_FLAGS ?= $(COMMON_FLAGS) -g --debug-log-level 3 --debug-log-output build-debug.zip
+DEBUG_FLAGS ?= $(COMMON_FLAGS) -g  # -g required for Linux builds
 RELEASE_FLAGS ?= $(COMMON_FLAGS) -r -O3pz
 BUILD_MODE ?= debug
+
+# Optional verbose logging (set DEBUG_LOG=1 to enable)
+ifdef DEBUG_LOG
+  DEBUG_FLAGS += --debug-log-level 3 --debug-log-output build-debug.zip
+endif
 
 # Select build flags based on BUILD_MODE
 ifeq ($(BUILD_MODE),release)
