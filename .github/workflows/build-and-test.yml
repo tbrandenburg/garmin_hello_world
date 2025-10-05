@@ -66,8 +66,21 @@ jobs:
             # Verify devices exist, download if missing
             if [ ! -d ~/.Garmin/ConnectIQ/Devices/fr265 ]; then
               echo "Downloading devices..."
+              
+              # Install CLI SDK Manager
               curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh -s -- -b /tmp >/dev/null 2>&1
-              /tmp/connect-iq-sdk-manager device download --device fr265 --device fenix7 --device epix2 --device venu2 2>&1 | grep -v "^INFO" || true
+              
+              # Login (required for device downloads)
+              /tmp/connect-iq-sdk-manager login --username="$GARMIN_USERNAME" --password="$GARMIN_PASSWORD" >/dev/null 2>&1 || true
+              
+              # Download devices
+              if ! /tmp/connect-iq-sdk-manager device download --device fr265 --device fenix7 --device epix2 --device venu2; then
+                echo "Warning: Bulk download failed, trying individually..."
+                for device in fr265 fenix7 epix2 venu2; do
+                  /tmp/connect-iq-sdk-manager device download --device "$device" || echo "Failed: $device"
+                done
+              fi
+              echo "✓ Devices downloaded"
             else
               echo "✓ Devices cached (4 devices available)"
             fi
