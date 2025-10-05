@@ -17,10 +17,12 @@ jobs:
       - name: Cache Connect IQ SDK
         uses: actions/cache@v4
         with:
-          path: ~/connectiq-sdk
-          key: connectiq-sdk-linux-${{ runner.os }}-v1
+          path: |
+            ~/connectiq-sdk
+            ~/.Garmin/ConnectIQ/Sdks
+          key: connectiq-sdk-manager-${{ runner.os }}-v2
           restore-keys: |
-            connectiq-sdk-linux-${{ runner.os }}-
+            connectiq-sdk-manager-${{ runner.os }}-
       
       - name: Install Dependencies
         run: |
@@ -34,11 +36,14 @@ jobs:
       
       - name: Setup Connect IQ SDK
         run: |
-          # Downloads SDK if not cached
-          # To update SDK version, edit scripts/setup_sdk.sh
-          # Find latest SDK at: https://developer.garmin.com/connect-iq/sdk/
+          # Uses official SDK Manager to download and install SDK
+          # SDK Manager downloads the latest compatible SDK version
+          # Cache speeds up subsequent runs significantly
           if [ ! -d ~/connectiq-sdk/bin ]; then
+            echo "SDK not cached, running SDK Manager installation..."
             ./scripts/setup_sdk.sh
+          else
+            echo "SDK found in cache, skipping installation"
           fi
           echo "$HOME/connectiq-sdk/bin" >> $GITHUB_PATH
           echo "SDK_HOME=$HOME/connectiq-sdk" >> $GITHUB_ENV
