@@ -54,55 +54,82 @@ The **Connect IQ SDK Manager CLI** ([lindell/connect-iq-sdk-manager-cli](https:/
 ```
 
 The script will:
-1. Download CLI Manager for your platform
+1. Download CLI Manager (automatically gets latest version)
 2. Accept license agreement
-3. Install SDK (latest by default)
-4. Create symlink at `~/connectiq-sdk`
-5. Validate installation
+3. Login to Garmin (requires credentials)
+4. Install SDK (^7.0.0 by default = latest 7.x)
+5. Create symlink at `~/connectiq-sdk`
+6. Validate installation
+
+**Note:** The CLI Manager is installed using the [official install script](https://github.com/lindell/connect-iq-sdk-manager-cli#automatic-binary-install) which always downloads the latest version.
 
 ### Manual Setup
 
 If you prefer to install manually:
 
 **1. Download CLI Manager:**
+
+**Automatic (Recommended - Always Gets Latest):**
+```bash
+# Automatically downloads and installs latest version
+curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh
+```
+
+**Manual (If Preferred):**
 ```bash
 # macOS
-VERSION="0.7.1"
+VERSION="0.7.1"  # Check https://github.com/lindell/connect-iq-sdk-manager-cli/releases for latest
 ARCH=$(uname -m)
 PLATFORM=$([ "$ARCH" = "arm64" ] && echo "Darwin_ARM64" || echo "Darwin_x86_64")
 curl -L -o /tmp/cli-sdk-manager.tar.gz \
   "https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/v${VERSION}/connect-iq-sdk-manager-cli_${VERSION}_${PLATFORM}.tar.gz"
 tar -xzf /tmp/cli-sdk-manager.tar.gz -C /tmp
-chmod +x /tmp/connect-iq-sdk-manager-cli
-sudo mv /tmp/connect-iq-sdk-manager-cli /usr/local/bin/
+chmod +x /tmp/connect-iq-sdk-manager
+sudo mv /tmp/connect-iq-sdk-manager /usr/local/bin/
 
 # Linux
-VERSION="0.7.1"
+VERSION="0.7.1"  # Check https://github.com/lindell/connect-iq-sdk-manager-cli/releases for latest
 curl -L -o /tmp/cli-sdk-manager.tar.gz \
   "https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/v${VERSION}/connect-iq-sdk-manager-cli_${VERSION}_Linux_x86_64.tar.gz"
 tar -xzf /tmp/cli-sdk-manager.tar.gz -C /tmp
-chmod +x /tmp/connect-iq-sdk-manager-cli
-sudo mv /tmp/connect-iq-sdk-manager-cli /usr/local/bin/
+chmod +x /tmp/connect-iq-sdk-manager
+sudo mv /tmp/connect-iq-sdk-manager /usr/local/bin/
 ```
 
 **2. Accept License:**
 ```bash
-connect-iq-sdk-manager-cli agreement view
-connect-iq-sdk-manager-cli agreement accept
+connect-iq-sdk-manager agreement view
+connect-iq-sdk-manager agreement accept
 ```
 
-**3. Install SDK:**
+**3. Login to Garmin:**
 ```bash
-# Latest SDK (recommended)
-connect-iq-sdk-manager-cli sdk set "latest"
+# Interactive OAuth (opens browser)
+connect-iq-sdk-manager login
 
-# Or specific version
-connect-iq-sdk-manager-cli sdk set "^7.0.0"
+# Or use credentials (for automation)
+export GARMIN_USERNAME="your_email@example.com"
+export GARMIN_PASSWORD="your_password"
+connect-iq-sdk-manager login
 ```
 
-**4. Configure Environment:**
+**4. Install SDK:**
 ```bash
-SDK_PATH=$(connect-iq-sdk-manager-cli sdk current-path)
+# Latest 7.x SDK (recommended)
+connect-iq-sdk-manager sdk set "^7.0.0"
+
+# Latest 8.x SDK
+connect-iq-sdk-manager sdk set "^8.0.0"
+
+# Or exact version
+connect-iq-sdk-manager sdk set "7.3.1"
+
+# Note: "latest" is NOT a valid version pattern
+```
+
+**5. Configure Environment:**
+```bash
+SDK_PATH=$(connect-iq-sdk-manager sdk current-path)
 ln -s "$SDK_PATH" ~/connectiq-sdk
 export SDK_HOME="$HOME/connectiq-sdk"
 export PATH="$SDK_HOME/bin:$PATH"
@@ -110,22 +137,27 @@ export PATH="$SDK_HOME/bin:$PATH"
 
 ## SDK Version Management
 
-### Default: Latest
+### Default: Latest 7.x
 
-The setup scripts default to installing the **latest** available SDK:
+The setup scripts default to installing the **latest 7.x** SDK using semver pattern `^7.0.0`:
 
 ```bash
-./scripts/setup_sdk_macos.sh  # Installs latest
+./scripts/setup_sdk_macos.sh  # Installs latest 7.x
 ```
 
+**Important:** The string "latest" is NOT supported by the CLI tool. Use semver patterns instead:
+- `^7.0.0` - Latest 7.x release
+- `^8.0.0` - Latest 8.x release  
+- `7.3.1` - Exact version
+
 **Pros:**
-- ✅ Latest features and bug fixes
-- ✅ Best device support
-- ✅ No manual updates needed
+- ✅ Gets updates within major version
+- ✅ Avoids breaking changes from major version bumps
+- ✅ Predictable for CI/CD
 
 **Cons:**
-- ⚠️ May introduce breaking changes
-- ⚠️ Less predictable for CI/CD
+- ⚠️ Minor version updates may still have changes
+- ⚠️ Requires manual update for new major versions
 
 ### Pin Specific Version
 
@@ -145,7 +177,7 @@ export CONNECTIQ_SDK_VERSION="7.3.1"
 
 | Use Case | Recommended Version | Why |
 |----------|---------------------|-----|
-| **Local Dev** | `latest` | Get newest features |
+| **Local Dev** | `^7.0.0` or `^8.0.0` | Latest in major version |
 | **CI/CD** | `^7.0.0` | Stability + updates |
 | **Releases** | `7.3.1` (exact) | Reproducibility |
 
@@ -163,35 +195,42 @@ connect-iq-sdk-manager-cli sdk list
 
 ### SDK Management
 ```bash
+# Login first (required)
+connect-iq-sdk-manager login
+# Or with credentials:
+export GARMIN_USERNAME="your_email@example.com"
+export GARMIN_PASSWORD="your_password"
+connect-iq-sdk-manager login
+
 # List available versions
-connect-iq-sdk-manager-cli sdk list
+connect-iq-sdk-manager sdk list
 
-# Install latest
-connect-iq-sdk-manager-cli sdk set "latest"
+# Install latest 7.x (semver pattern)
+connect-iq-sdk-manager sdk set "^7.0.0"
 
-# Install version pattern
-connect-iq-sdk-manager-cli sdk set "^7.0.0"
+# Install latest 8.x
+connect-iq-sdk-manager sdk set "^8.0.0"
 
 # Install specific version
-connect-iq-sdk-manager-cli sdk set "7.3.1"
+connect-iq-sdk-manager sdk set "7.3.1"
 
 # Get SDK path
-connect-iq-sdk-manager-cli sdk current-path
+connect-iq-sdk-manager sdk current-path
 
 # Get binary path
-connect-iq-sdk-manager-cli sdk current-path --bin
+connect-iq-sdk-manager sdk current-path --bin
 ```
 
 ### Device Management
 ```bash
 # List devices
-connect-iq-sdk-manager-cli device list
+connect-iq-sdk-manager device list
 
 # Download device profile
-connect-iq-sdk-manager-cli device download fenix7
+connect-iq-sdk-manager device download fenix7
 
 # Download with fonts
-connect-iq-sdk-manager-cli device download fenix7 --include-fonts
+connect-iq-sdk-manager device download fenix7 --include-fonts
 ```
 
 ### Build Commands
@@ -226,6 +265,11 @@ env:
 jobs:
   build-and-test:
     steps:
+      - name: Setup Garmin Credentials
+        run: |
+          echo "GARMIN_USERNAME=${{ secrets.GARMIN_USERNAME }}" >> $GITHUB_ENV
+          echo "GARMIN_PASSWORD=${{ secrets.GARMIN_PASSWORD }}" >> $GITHUB_ENV
+      
       - name: Cache SDK
         uses: actions/cache@v4
         with:
@@ -243,6 +287,11 @@ jobs:
 - ✅ Fast (~30 seconds)
 - ✅ Cache-friendly
 - ✅ Version-controlled
+
+**Required Secrets:**
+- `GARMIN_USERNAME` - Your Garmin Connect email
+- `GARMIN_PASSWORD` - Your Garmin Connect password
+- `MONKEYC_KEY_B64` - Base64-encoded developer key
 
 ### GitLab CI
 
@@ -271,12 +320,15 @@ RUN VERSION=0.7.1 && \
     curl -L -o /tmp/cli-sdk-manager.tar.gz \
       "https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/v${VERSION}/connect-iq-sdk-manager-cli_${VERSION}_Linux_x86_64.tar.gz" && \
     tar -xzf /tmp/cli-sdk-manager.tar.gz -C /tmp && \
-    chmod +x /tmp/connect-iq-sdk-manager-cli && \
-    mv /tmp/connect-iq-sdk-manager-cli /usr/local/bin/
+    chmod +x /tmp/connect-iq-sdk-manager && \
+    mv /tmp/connect-iq-sdk-manager /usr/local/bin/
 
-# Install SDK
-RUN connect-iq-sdk-manager-cli agreement accept && \
-    connect-iq-sdk-manager-cli sdk set "latest"
+# Login and install SDK
+ARG GARMIN_USERNAME
+ARG GARMIN_PASSWORD
+RUN connect-iq-sdk-manager agreement accept && \
+    connect-iq-sdk-manager login --username="${GARMIN_USERNAME}" --password="${GARMIN_PASSWORD}" && \
+    connect-iq-sdk-manager sdk set "^7.0.0"
 
 ENV SDK_HOME=/root/.Garmin/ConnectIQ/Sdks/connectiq-sdk-lin-*
 ENV PATH="${SDK_HOME}/bin:${PATH}"
@@ -287,29 +339,30 @@ ENV PATH="${SDK_HOME}/bin:${PATH}"
 ### SDK Not Found
 ```bash
 # Check path
-connect-iq-sdk-manager-cli sdk current-path
+connect-iq-sdk-manager sdk current-path
 
-# Reinstall
-connect-iq-sdk-manager-cli sdk set "latest"
+# Reinstall (ensure you're logged in first)
+connect-iq-sdk-manager login
+connect-iq-sdk-manager sdk set "^7.0.0"
 
 # Recreate symlink
-ln -sf $(connect-iq-sdk-manager-cli sdk current-path) ~/connectiq-sdk
+ln -sf $(connect-iq-sdk-manager sdk current-path) ~/connectiq-sdk
 ```
 
 ### License Not Accepted
 ```bash
 # View and accept
-connect-iq-sdk-manager-cli agreement view
-connect-iq-sdk-manager-cli agreement accept
+connect-iq-sdk-manager agreement view
+connect-iq-sdk-manager agreement accept
 ```
 
 ### Permission Denied
 ```bash
 # Make executable
-chmod +x /tmp/connect-iq-sdk-manager-cli
+chmod +x /tmp/connect-iq-sdk-manager
 
 # Or if globally installed
-sudo chmod +x /usr/local/bin/connect-iq-sdk-manager-cli
+sudo chmod +x /usr/local/bin/connect-iq-sdk-manager
 ```
 
 ### Build Fails After Update
@@ -326,9 +379,9 @@ make build
 ### Device Not Found in Simulator
 ```bash
 # Download device profiles
-connect-iq-sdk-manager-cli device download fenix7
-connect-iq-sdk-manager-cli device download venu2
-connect-iq-sdk-manager-cli device download epix2
+connect-iq-sdk-manager device download fenix7
+connect-iq-sdk-manager device download venu2
+connect-iq-sdk-manager device download epix2
 ```
 
 ## Environment Variables
@@ -338,8 +391,13 @@ connect-iq-sdk-manager-cli device download epix2
 export SDK_HOME="$HOME/connectiq-sdk"
 export PATH="$SDK_HOME/bin:$PATH"
 
+# Required: Garmin credentials (for SDK download)
+export GARMIN_USERNAME="your_email@example.com"
+export GARMIN_PASSWORD="your_password"
+
 # Optional: Pin SDK version for setup scripts
-export CONNECTIQ_SDK_VERSION="latest"  # Or "^7.0.0", "7.3.1", etc.
+export CONNECTIQ_SDK_VERSION="^7.0.0"  # Or "^8.0.0", "7.3.1", etc.
+# Note: "latest" is NOT supported
 
 # Optional: Signing key
 export MONKEYC_KEY="$PWD/.keys/developer_key.der"

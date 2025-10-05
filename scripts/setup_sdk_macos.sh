@@ -5,73 +5,72 @@
 set -euo pipefail
 
 # Configuration
-CLI_SDK_MANAGER_VERSION="v0.7.1"
 SDK_DIR="$HOME/connectiq-sdk"
-# Use latest available SDK by default, or override with environment variable
-SDK_VERSION="${CONNECTIQ_SDK_VERSION:-latest}"  # Default: latest, or set CONNECTIQ_SDK_VERSION to pin
+# SDK version: Use semver pattern (e.g., ^7.0.0) or exact version (e.g., 7.3.1)
+# Note: "latest" is NOT supported - use ^7.0.0 or ^8.0.0 for latest in major version
+SDK_VERSION="${CONNECTIQ_SDK_VERSION:-^7.0.0}"  # Default: latest 7.x
 
 echo "============================================"
 echo "Connect IQ SDK Setup for macOS (CLI)"
 echo "============================================"
 echo ""
 
-# Detect architecture
+# Detect architecture (for display only)
 ARCH=$(uname -m)
-if [ "$ARCH" = "arm64" ]; then
-    PLATFORM="Darwin_ARM64"
-elif [ "$ARCH" = "x86_64" ]; then
-    PLATFORM="Darwin_x86_64"
-else
-    echo "ERROR: Unsupported architecture: $ARCH"
-    exit 1
-fi
-
-echo "Detected architecture: $ARCH (using $PLATFORM binary)"
+echo "Detected architecture: $ARCH"
 echo ""
 
-# Step 1: Install CLI SDK Manager
-echo "[1/4] Installing CLI SDK Manager (no GUI!)..."
-# Remove 'v' prefix from version for filename, use correct format from GitHub releases
-VERSION_NO_V="${CLI_SDK_MANAGER_VERSION#v}"
-CLI_URL="https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/${CLI_SDK_MANAGER_VERSION}/connect-iq-sdk-manager-cli_${VERSION_NO_V}_${PLATFORM}.tar.gz"
-
-echo "      Downloading from: ${CLI_URL}"
-if ! curl -L -f -o /tmp/cli-sdk-manager.tar.gz "${CLI_URL}"; then
-    echo "ERROR: Failed to download CLI SDK Manager"
-    echo "URL: ${CLI_URL}"
+# Step 1: Install CLI SDK Manager (always gets latest version)
+echo "[1/4] Installing CLI SDK Manager (latest version)..."
+echo "      Using official install script"
+if ! curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh -s -- -b /tmp; then
+    echo "ERROR: Failed to install CLI SDK Manager"
     exit 1
 fi
-
-tar -xzf /tmp/cli-sdk-manager.tar.gz -C /tmp
-# The binary name inside is 'connect-iq-sdk-manager-cli'
-chmod +x /tmp/connect-iq-sdk-manager-cli
 echo "      CLI SDK Manager installed"
 echo ""
 
 # Step 2: Accept license agreement (required)
 echo "[2/4] Accepting SDK license agreement..."
 # Generate acceptance hash by viewing agreement first
-AGREEMENT_HASH=$(/tmp/connect-iq-sdk-manager-cli agreement view 2>&1 | grep -oE 'Agreement Hash: [a-f0-9]+' | cut -d' ' -f3 | head -1 || echo "")
+AGREEMENT_HASH=$(/tmp/connect-iq-sdk-manager agreement view 2>&1 | grep -oE 'Agreement Hash: [a-f0-9]+' | cut -d' ' -f3 | head -1 || echo "")
 if [ -z "${AGREEMENT_HASH}" ]; then
     echo "      Warning: Could not get agreement hash, using default accept"
-    /tmp/connect-iq-sdk-manager-cli agreement accept || true
+    /tmp/connect-iq-sdk-manager agreement accept || true
 else
     echo "      Agreement hash: ${AGREEMENT_HASH}"
-    /tmp/connect-iq-sdk-manager-cli agreement accept --agreement-hash="${AGREEMENT_HASH}"
+    /tmp/connect-iq-sdk-manager agreement accept --agreement-hash="${AGREEMENT_HASH}"
 fi
 echo "      License accepted"
 echo ""
 
+# Step 2.5: Login to Garmin (required for SDK download)
+echo "[2.5/4] Logging in to Garmin..."
+if [ -n "${GARMIN_USERNAME:-}" ] && [ -n "${GARMIN_PASSWORD:-}" ]; then
+    echo "      Using credentials from environment variables"
+    /tmp/connect-iq-sdk-manager login --username="${GARMIN_USERNAME}" --password="${GARMIN_PASSWORD}"
+else
+    echo "      WARN: GARMIN_USERNAME and GARMIN_PASSWORD not set"
+    echo "      Will attempt OAuth login (opens browser)"
+    echo "      For automation, set these environment variables:"
+    echo "        export GARMIN_USERNAME=your_email@example.com"
+    echo "        export GARMIN_PASSWORD=your_password"
+    echo ""
+    /tmp/connect-iq-sdk-manager login
+fi
+echo "      Login successful"
+echo ""
+
 # Step 3: Download and set SDK version
-echo "[3/4] Downloading Connect IQ SDK ${SDK_VERSION}..."
+echo "[3/5] Downloading Connect IQ SDK ${SDK_VERSION}..."
 
 # First, list available SDKs to show what's available
 echo "      Fetching available SDK versions..."
-/tmp/connect-iq-sdk-manager-cli sdk list 2>/dev/null | head -10 || true
+/tmp/connect-iq-sdk-manager sdk list 2>/dev/null | head -10 || true
 echo ""
 
 # Install the requested SDK version
-if ! /tmp/connect-iq-sdk-manager-cli sdk set "${SDK_VERSION}"; then
+if ! /tmp/connect-iq-sdk-manager sdk set "${SDK_VERSION}"; then
     echo "ERROR: SDK installation failed for version: ${SDK_VERSION}"
     echo "      Try setting CONNECTIQ_SDK_VERSION to a specific version (e.g., '7.3.1' or '^7.0.0')"
     exit 1
@@ -80,8 +79,8 @@ echo "      SDK downloaded and activated"
 echo ""
 
 # Step 4: Find SDK and create symlink
-echo "[4/4] Creating SDK symlink..."
-SDK_PATH=$(/tmp/connect-iq-sdk-manager-cli sdk current-path)
+echo "[4/5] Creating SDK symlink..."
+SDK_PATH=$(/tmp/connect-iq-sdk-manager sdk current-path)
 
 if [ -z "${SDK_PATH}" ] || [ ! -d "${SDK_PATH}" ]; then
     echo "ERROR: SDK path not found"

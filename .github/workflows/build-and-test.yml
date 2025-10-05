@@ -8,10 +8,9 @@ on:
 
 env:
   # SDK Version Strategy:
-  # - "latest" = Always use newest SDK (aggressive, may introduce breaking changes)
-  # - "^7.0.0" = Latest 7.x (recommended for stability)
-  # - "7.3.1" = Exact version (maximum reproducibility)
-  # See docs/SDK_VERSION_STRATEGY.md for details
+  # Use semver patterns: ^7.0.0 (latest 7.x), ^8.0.0 (latest 8.x), or exact version: 7.3.1
+  # Note: "latest" is NOT supported by the CLI tool
+  # See docs/SDK_SETUP.md for details
   CONNECTIQ_SDK_VERSION: "^7.0.0"
 
 jobs:
@@ -42,16 +41,24 @@ jobs:
           sudo apt-get install -y shellcheck wget unzip
       
       - name: Setup Developer Key
+        env:
+          MONKEYC_KEY_B64: ${{ secrets.MONKEYC_KEY_B64 }}
         run: |
+          # Use env var instead of direct secret interpolation (more secure)
           mkdir -p .keys
-          echo "${{ secrets.MONKEYC_KEY_B64 }}" | base64 -d > .keys/developer_key.der
+          echo "$MONKEYC_KEY_B64" | base64 -d > .keys/developer_key.der
       
       - name: Setup Connect IQ SDK
+        env:
+          # Pass credentials directly to this step only (more secure)
+          GARMIN_USERNAME: ${{ secrets.GARMIN_USERNAME }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
         run: |
           # Uses CLI SDK Manager (lindell/connect-iq-sdk-manager-cli)
           # Pure CLI tool - no GUI libraries needed!
           # Version controlled by CONNECTIQ_SDK_VERSION env var (see top of workflow)
           # Cache speeds up subsequent runs significantly
+          # Credentials are scoped to this step only for security
           
           echo "Target SDK version: $CONNECTIQ_SDK_VERSION"
           
