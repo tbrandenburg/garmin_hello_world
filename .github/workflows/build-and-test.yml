@@ -94,19 +94,46 @@ jobs:
       
       - name: Discover Available Devices
         run: |
-          echo "=== Available devices in SDK 7.x ==="
-          ls -1 "$SDK_HOME/devices" | head -30
+          echo "=== Searching for devices directory ==="
+          
+          # Find devices directory
+          DEVICES_DIR=""
+          if [ -d "$HOME/.Garmin/ConnectIQ/Devices" ]; then
+            DEVICES_DIR="$HOME/.Garmin/ConnectIQ/Devices"
+            echo "Found devices at: $DEVICES_DIR"
+          elif [ -d "$SDK_HOME/devices" ]; then
+            DEVICES_DIR="$SDK_HOME/devices"
+            echo "Found devices at: $DEVICES_DIR"
+          else
+            echo "Devices directory not found. Checking common locations:"
+            echo "  ✗ $HOME/.Garmin/ConnectIQ/Devices"
+            echo "  ✗ $SDK_HOME/devices"
+            echo ""
+            echo "Listing all directories under SDK:"
+            find "$SDK_HOME" -maxdepth 2 -type d 2>/dev/null | head -20
+            DEVICES_DIR=""
+          fi
+          
           echo ""
-          echo "=== Checking manifest targets ==="
-          for device in fr265 fenix7 epix2 venu2; do
-            if [ -d "$SDK_HOME/devices/$device" ]; then
-              echo "✓ $device exists in SDK"
-            else
-              echo "✗ $device NOT FOUND in SDK"
-              echo "   Searching for similar names..."
-              ls -1 "$SDK_HOME/devices" | grep -i "$(echo $device | sed 's/[0-9]//g')" || echo "   No matches found"
-            fi
-          done
+          if [ -n "$DEVICES_DIR" ] && [ -d "$DEVICES_DIR" ]; then
+            echo "=== Available devices (first 30) ==="
+            ls -1 "$DEVICES_DIR" | head -30
+            echo ""
+            echo "=== Checking manifest targets ==="
+            for device in fr265 fenix7 epix2 venu2; do
+              if [ -d "$DEVICES_DIR/$device" ]; then
+                echo "✓ $device exists"
+              else
+                echo "✗ $device NOT FOUND"
+                echo "   Searching for similar names..."
+                ls -1 "$DEVICES_DIR" | grep -i "$(echo $device | sed 's/[0-9]//g')" | head -5 || echo "   No matches found"
+              fi
+            done
+          else
+            echo "=== WARN: Devices not found ==="
+            echo "Builds will fail if devices are not available."
+            echo "The setup script should have installed them."
+          fi
       
       - name: Build All Devices
         run: make buildall -j4

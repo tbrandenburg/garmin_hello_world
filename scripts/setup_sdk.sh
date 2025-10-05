@@ -57,7 +57,7 @@ echo "      Login successful"
 echo ""
 
 # Step 3: Download and set SDK version
-echo "[3/5] Downloading Connect IQ SDK ${SDK_VERSION}..."
+echo "[3/6] Downloading Connect IQ SDK ${SDK_VERSION}..."
 
 # First, list available SDKs to show what's available
 echo "      Fetching available SDK versions..."
@@ -73,8 +73,21 @@ fi
 echo "      SDK downloaded and activated"
 echo ""
 
-# Step 4: Find SDK and create symlink
-echo "[4/5] Creating SDK symlink..."
+# Step 4: Download required devices
+echo "[4/6] Downloading required devices..."
+echo "      Target devices: fr265, fenix7, epix2, venu2"
+
+# Download each device
+for device in fr265 fenix7 epix2 venu2; do
+    echo "      Downloading ${device}..."
+    /tmp/connect-iq-sdk-manager device install "${device}" || echo "      Warning: Could not install ${device}"
+done
+
+echo "      Devices downloaded"
+echo ""
+
+# Step 5: Find SDK and create symlink
+echo "[5/6] Creating SDK symlink..."
 SDK_PATH=$(/tmp/connect-iq-sdk-manager sdk current-path)
 
 if [ -z "${SDK_PATH}" ] || [ ! -d "${SDK_PATH}" ]; then
@@ -100,12 +113,42 @@ fi
 
 MONKEYC_VERSION=$("${SDK_DIR}/bin/monkeyc" --version 2>&1 | head -n1 || echo "unknown")
 
+# Step 6: Verify devices are available
+echo "[6/6] Verifying device installation..."
+
+# Find where devices are stored
+DEVICES_DIR=""
+if [ -d "$HOME/.Garmin/ConnectIQ/Devices" ]; then
+    DEVICES_DIR="$HOME/.Garmin/ConnectIQ/Devices"
+elif [ -d "${SDK_DIR}/devices" ]; then
+    DEVICES_DIR="${SDK_DIR}/devices"
+fi
+
+if [ -n "${DEVICES_DIR}" ] && [ -d "${DEVICES_DIR}" ]; then
+    echo "      Devices directory: ${DEVICES_DIR}"
+    echo "      Available devices:"
+    for device in fr265 fenix7 epix2 venu2; do
+        if [ -d "${DEVICES_DIR}/${device}" ]; then
+            echo "        ✓ ${device}"
+        else
+            echo "        ✗ ${device} (not found)"
+        fi
+    done
+else
+    echo "      Warning: Devices directory not found"
+    echo "      Expected at: ~/.Garmin/ConnectIQ/Devices or ${SDK_DIR}/devices"
+fi
+echo ""
+
 echo ""
 echo "============================================"
 echo "✓ SDK Setup Complete!"
 echo "============================================"
 echo "SDK Location: ${SDK_DIR}"
 echo "SDK Version:  ${MONKEYC_VERSION}"
+if [ -n "${DEVICES_DIR}" ]; then
+    echo "Devices:      ${DEVICES_DIR}"
+fi
 echo ""
 echo "Environment variables:"
 echo "  export SDK_HOME=\"${SDK_DIR}\""
