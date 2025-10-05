@@ -18,14 +18,15 @@ This repository contains a Hello World application for Garmin smartwatches using
 
 1. [TL;DR Quick Start](#tldr-quick-start)
 2. [Development Environment Setup](#development-environment-setup)
-3. [Project Structure and Architecture](#project-structure-and-architecture)
-4. [Common Commands](#common-commands)
-5. [Development Workflow](#development-workflow)
-6. [Monkey C and Connect IQ Primer](#monkey-c-and-connect-iq-primer)
-7. [Device Testing and Simulator](#device-testing-and-simulator)
-8. [Testing Strategy](#testing-strategy)
-9. [CI/CD and Automation](#cicd-and-automation)
-10. [Troubleshooting](#troubleshooting)
+3. [**Makefile Build System**](#makefile-build-system) ⭐ **NEW**
+4. [Project Structure and Architecture](#project-structure-and-architecture)
+5. [Common Commands](#common-commands)
+6. [Development Workflow](#development-workflow)
+7. [Monkey C and Connect IQ Primer](#monkey-c-and-connect-iq-primer)
+8. [Device Testing and Simulator](#device-testing-and-simulator)
+9. [Testing Strategy](#testing-strategy)
+10. [CI/CD and Automation](#cicd-and-automation)
+11. [Troubleshooting](#troubleshooting)
 
 ## TL;DR Quick Start
 
@@ -84,6 +85,322 @@ monkeydo --help
 - The simulator's Devices panel lists all installed devices
 - Device tokens match folders under `$CONNECTIQ_SDK/devices/` (e.g., fenix7, epix2, venu2)
 
+## Makefile Build System
+
+This project uses a **professional Makefile-based build system** following industry best practices from successful Connect IQ open-source projects.
+
+### Why Makefile?
+
+✅ **Benefits:**
+- Smart SDK autodetection (no environment variables required)
+- Parallel builds for multiple devices (`make buildall -j`)
+- Dependency tracking (only rebuilds when files change)
+- Environment validation before builds
+- Colored, professional output
+- CI/CD ready
+- IDE-friendly (works with VS Code, vim, etc.)
+
+### Quick Reference
+
+```bash
+# Show all available commands
+make help
+
+# Validate your environment
+make validate
+
+# Build for default device (fr265)
+make build
+
+# Build for specific device
+make build DEVICE=fenix7
+
+# Build for all devices (parallel)
+make buildall -j4
+
+# Build and run in simulator
+make run DEVICE=epix2
+
+# Build optimized releases
+make release -j4
+
+# Create store package
+make package
+
+# List supported devices
+make devices
+
+# Show SDK and tool versions
+make version
+
+# Clean build artifacts
+make clean
+
+# Run all diagnostics
+make doctor
+```
+
+### Build Targets
+
+| Target | Description |
+|--------|-------------|
+| `help` | Show available targets and examples |
+| `validate` | Check SDK, tools, keys, and project files |
+| `devices` | List all supported devices from manifest |
+| `version` | Display SDK and compiler versions |
+| `build` | Build for single device (use DEVICE=...) |
+| `buildall` | Build for all devices (supports -j for parallel) |
+| `run` | Build and launch in simulator |
+| `release` | Build optimized releases for all devices |
+| `package` | Create store-ready .iq packages |
+| `test` | Run test harness (when tests exist) |
+| `clean` | Remove all build artifacts |
+| `doctor` | Run full environment diagnostics |
+| `lint` | Run shellcheck on scripts (if available) |
+
+### Build Variables
+
+Customize builds with these variables:
+
+```bash
+# Target device (default: fr265)
+make build DEVICE=venu2
+
+# Build mode: debug or release (default: debug)
+make build BUILD_MODE=release
+
+# Parallel jobs (default: auto-detected CPU count)
+make buildall -j8
+```
+
+### Configuration Files
+
+**`config.mk`** - Default build configuration
+- SDK autodetection
+- Compiler flags
+- Default devices
+- Color schemes
+
+**`properties.mk` (optional)** - User-specific overrides
+- Create from `properties.mk.example`
+- Not tracked in git
+- Useful for team-specific settings
+
+```bash
+# Create custom configuration
+cp properties.mk.example properties.mk
+# Edit properties.mk with your preferences
+```
+
+**Example `properties.mk`:**
+```makefile
+# Force specific SDK path
+SDK_HOME := /Users/you/ConnectIQ/Sdks/connectiq-sdk-mac-8.3.0
+
+# Use different default device
+DEFAULT_DEVICE := fenix7
+
+# Custom parallel jobs
+JOBS := 8
+```
+
+### Smart SDK Autodetection
+
+The build system automatically finds your SDK in this order:
+
+1. `$CONNECTIQ_SDK` environment variable (if set)
+2. `~/Library/Application Support/Garmin/ConnectIQ/Sdks/` (macOS)
+3. `/Applications/Garmin/ConnectIQ/Sdks/` (macOS)
+4. `~/connectiq-sdk*` (generic)
+
+**To verify detection:**
+```bash
+make version
+# Shows: SDK Home, App Name, Compiler version
+```
+
+### Environment Validation
+
+Before any build, the system validates:
+- ✓ SDK installation and paths
+- ✓ Compiler and simulator tools
+- ✓ Developer signing key
+- ✓ Project files (manifest, jungle)
+- ✓ Device list from manifest
+
+```bash
+make validate
+# Outputs detailed validation report with colored status
+```
+
+### Parallel Builds
+
+Build for all devices simultaneously:
+
+```bash
+# Auto-detect CPU cores
+make buildall -j
+
+# Specify job count
+make buildall -j4
+
+# Silent parallel build
+make buildall -j4 2>&1 | grep -E "SUCCESS|ERROR"
+```
+
+**Build times (4 devices):**
+- Sequential: ~20-30 seconds
+- Parallel (-j4): ~8-10 seconds
+
+### Dependency Tracking
+
+Builds automatically rebuild when these change:
+- ✓ Any `.mc` source file
+- ✓ Any resource file (XML, images, strings)
+- ✓ `manifest.xml`
+- ✓ `monkey.jungle`
+
+**Incremental builds:**
+```bash
+# First build: ~8 seconds
+make build
+
+# No changes: instant
+make build
+
+# After editing MainView.mc: ~8 seconds
+make build
+```
+
+### CI/CD Integration
+
+**GitHub Actions Example:**
+```yaml
+name: Build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Setup SDK (cache for speed)
+      - name: Cache Connect IQ SDK
+        uses: actions/cache@v4
+        with:
+          path: ~/connectiq-sdk
+          key: ciq-sdk-${{ runner.os }}
+      
+      # Restore signing key from secrets
+      - name: Setup Developer Key
+        run: |
+          mkdir -p .keys
+          echo "${{ secrets.MONKEYC_KEY_B64 }}" | base64 -d > .keys/developer_key.der
+      
+      # Validate environment
+      - name: Validate
+        run: make validate
+      
+      # Build all devices
+      - name: Build All
+        run: make buildall -j$(nproc)
+      
+      # Upload artifacts
+      - name: Upload Builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: bin/*.prg
+```
+
+### Troubleshooting Build Issues
+
+**SDK Not Found:**
+```bash
+# Check SDK detection
+make version
+
+# Set SDK manually in properties.mk
+echo "SDK_HOME := /path/to/sdk" > properties.mk
+make validate
+```
+
+**Compiler Errors:**
+```bash
+# Check compiler path
+which monkeyc
+
+# Verify SDK installation
+ls "$SDK_HOME/bin/"
+
+# Run validation
+make doctor
+```
+
+**Key Issues:**
+```bash
+# Generate new key
+openssl genrsa -out .keys/developer_key.pem 4096
+openssl pkcs8 -topk8 -inform PEM -outform DER \
+  -in .keys/developer_key.pem -out .keys/developer_key.der -nocrypt
+
+# Verify key exists
+make validate | grep "signing key"
+```
+
+**Build Artifacts Not Updating:**
+```bash
+# Force clean rebuild
+make clean
+make build
+
+# Check file timestamps
+ls -lt source/*.mc bin/*.prg
+```
+
+### Migration from scripts/build.sh
+
+The old `scripts/build.sh` is **deprecated** but still works:
+
+```bash
+# Old way (deprecated)
+./scripts/build.sh fenix7
+
+# New way (recommended)
+make build DEVICE=fenix7
+```
+
+**The old script now forwards to Make and shows a deprecation notice.**
+
+### Advanced Usage
+
+**Custom Compiler Flags:**
+```makefile
+# In properties.mk
+DEBUG_FLAGS := -w -g
+RELEASE_FLAGS := -w -r -O3pz
+```
+
+**Build Specific Device:**
+```bash
+# Just one device
+make bin/garmin_hello_world_fenix7.prg
+```
+
+**Conditional Builds:**
+```bash
+# Build only if validation passes
+make validate && make buildall -j
+```
+
+**Custom App Name:**
+```makefile
+# In properties.mk
+APP_NAME := my_custom_name
+# Outputs: bin/my_custom_name_fenix7.prg
+```
+
 ## Project Structure and Architecture
 
 ### Expected File Structure
@@ -136,37 +453,78 @@ garmin_hello_world/
 
 ## Common Commands
 
-### Environment Setup (recommended)
+**Note:** This project uses a Makefile build system. See the [Makefile Build System](#makefile-build-system) section for comprehensive details.
+
+### Quick Commands (Makefile - Recommended)
+
 ```bash
+# Build for default device (fr265)
+make build
+
+# Build for specific device
+make build DEVICE=fenix7
+
+# Build and run in simulator
+make run DEVICE=epix2
+
+# Build for all devices (parallel)
+make buildall -j4
+
+# Build optimized releases
+make release -j4
+
+# Clean build artifacts
+make clean
+
+# Show all available commands
+make help
+```
+
+### Legacy Commands (Direct monkeyc)
+
+These still work but Makefile is recommended:
+
+```bash
+# Environment setup
 export DEVICE=fenix7
 export MONKEYC_KEY="$PWD/.keys/developer_key.der"
-```
 
-### Build for Simulator
-```bash
+# Build
 mkdir -p bin
-monkeyc -f monkey.jungle -d "${DEVICE}" -o bin/garmin_hello_world.prg -y "${MONKEYC_KEY}"
-```
+monkeyc -f monkey.jungle -d "${DEVICE}" \
+  -o bin/garmin_hello_world.prg \
+  -y "${MONKEYC_KEY}"
 
-### Run in Simulator
-```bash
+# Run in simulator
 monkeydo bin/garmin_hello_world.prg "${DEVICE}"
-```
 
-### Clean Build Artifacts
-```bash
+# Clean
 rm -rf bin dist
 ```
 
 ### Package for Store (.iq files)
-Store packages typically require additional steps via the IDE or SDK packaging utilities:
+
 ```bash
-mkdir -p dist
-# Use IDE or SDK packaging utility to create dist/garmin_hello_world.iq
+# Using Makefile (recommended)
+make package
+
+# Or use SDK packaging directly
+monkeyc -f monkey.jungle -e -r \
+  -o dist/garmin_hello_world.iq \
+  -y .keys/developer_key.der
 ```
 
 ### Testing
-Connect IQ lacks standardized unit testing. See the [Testing Strategy](#testing-strategy) section for a pragmatic approach using simulator-driven test harnesses.
+
+```bash
+# Run test harness (when implemented)
+make test
+
+# Run full diagnostics
+make doctor
+```
+
+See the [Testing Strategy](#testing-strategy) section for implementation details.
 
 ## Development Workflow
 

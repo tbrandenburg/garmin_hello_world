@@ -71,3 +71,7 @@ target/
 
 # Developer keys (critical)
 .keys/
+
+# User-specific build configuration
+properties.mk
+logs/

@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Build script for Garmin Hello World app
-# This script builds the app for one or more target devices
+# DEPRECATED: Please use Makefile instead
+# This script is maintained for backward compatibility
 
 set -e  # Exit on error
 
@@ -10,6 +11,22 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Deprecation notice
+echo -e "${YELLOW}========================================${NC}"
+echo -e "${YELLOW}DEPRECATION NOTICE${NC}"
+echo -e "${YELLOW}========================================${NC}"
+echo -e "${YELLOW}This build script is deprecated.${NC}"
+echo -e "${YELLOW}Please use the Makefile instead:${NC}"
+echo -e ""
+echo -e "  ${GREEN}make build${NC}              # Build for default device"
+echo -e "  ${GREEN}make build DEVICE=fenix7${NC} # Build for specific device"
+echo -e "  ${GREEN}make buildall -j${NC}        # Build for all devices"
+echo -e "  ${GREEN}make help${NC}               # Show all targets"
+echo -e ""
+echo -e "${YELLOW}Forwarding to Makefile...${NC}"
+echo -e "${YELLOW}========================================${NC}"
+echo -e ""
 
 echo -e "${GREEN}=== Garmin Hello World Build Script ===${NC}\n"
 
@@ -32,24 +49,10 @@ fi
 # Create bin directory
 mkdir -p bin
 
-# Default device
-DEVICE=${1:-fr265}
-echo -e "Building for device: ${YELLOW}${DEVICE}${NC}\n"
+# Forward to Makefile (accept DEVICE env var or first argument)
+DEVICE_ARG="${DEVICE:-${1:-fr265}}"
 
-# Build the app
-echo "Compiling..."
-monkeyc \
-    -f monkey.jungle \
-    -d "${DEVICE}" \
-    -o "bin/garmin_hello_world_${DEVICE}.prg" \
-    -y .keys/developer_key.der
+echo -e "${GREEN}Forwarding to: make build DEVICE=$DEVICE_ARG${NC}\n"
 
-if [ $? -eq 0 ]; then
-    echo -e "\n${GREEN}✓ Build successful!${NC}"
-    echo -e "Output: bin/garmin_hello_world_${DEVICE}.prg"
-    echo -e "\nTo run in simulator:"
-    echo -e "  ${YELLOW}monkeydo bin/garmin_hello_world_${DEVICE}.prg ${DEVICE}${NC}"
-else
-    echo -e "\n${RED}✗ Build failed!${NC}"
-    exit 1
-fi
+# Execute make and preserve exit code
+exec make build DEVICE="$DEVICE_ARG"
