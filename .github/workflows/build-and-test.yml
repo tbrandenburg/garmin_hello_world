@@ -8,8 +8,8 @@ on:
 
 jobs:
   build-and-test:
-    # Use Ubuntu 22.04 for webkit2gtk-4.0 compatibility with SDK Manager
-    runs-on: ubuntu-22.04
+    # Use latest Ubuntu - CLI SDK Manager doesn't need GUI libs!
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout Code
@@ -28,8 +28,8 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          # SDK Manager requires webkit2gtk-4.0 which is available in Ubuntu 22.04
-          sudo apt-get install -y xvfb shellcheck wget unzip libsecret-1-0 libwebkit2gtk-4.0-37 libgtk-3-0
+          # CLI SDK Manager only needs basic tools - no GUI libraries!
+          sudo apt-get install -y shellcheck wget unzip
       
       - name: Setup Developer Key
         run: |
@@ -38,11 +38,12 @@ jobs:
       
       - name: Setup Connect IQ SDK
         run: |
-          # Uses official SDK Manager to download and install SDK
-          # SDK Manager downloads the latest compatible SDK version
+          # Uses CLI SDK Manager (lindell/connect-iq-sdk-manager-cli)
+          # Pure CLI tool - no GUI libraries needed!
+          # Downloads latest compatible SDK version
           # Cache speeds up subsequent runs significantly
           if [ ! -d ~/connectiq-sdk/bin ]; then
-            echo "SDK not cached, running SDK Manager installation..."
+            echo "SDK not cached, running CLI SDK Manager..."
             ./scripts/setup_sdk.sh
           else
             echo "SDK found in cache, skipping installation"

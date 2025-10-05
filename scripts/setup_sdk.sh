@@ -1,128 +1,83 @@
 #!/usr/bin/env bash
-# setup_sdk.sh - Download and setup Connect IQ SDK for CI using SDK Manager
-# This is the official and recommended way to install the SDK
+# setup_sdk.sh - Download and setup Connect IQ SDK for CI using CLI SDK Manager
+# Uses the lindell/connect-iq-sdk-manager-cli tool (no GUI required!)
 
 set -euo pipefail
 
 # Configuration
-SDK_MANAGER_URL="https://developer.garmin.com/downloads/connect-iq/sdk-manager/connectiq-sdk-manager-linux.zip"
+CLI_SDK_MANAGER_VERSION="v0.7.1"
 SDK_DIR="$HOME/connectiq-sdk"
-TMP_DIR="/tmp/ciq-setup-$$"
+SDK_VERSION="^7.0.0"  # Latest 7.x SDK
 
 echo "============================================"
-echo "Connect IQ SDK Setup (using SDK Manager)"
+echo "Connect IQ SDK Setup (CLI, no GUI!)"
 echo "============================================"
 echo ""
 
-# Create temp directory
-mkdir -p "${TMP_DIR}"
-cd "${TMP_DIR}"
+# Step 1: Install CLI SDK Manager
+echo "[1/4] Installing CLI SDK Manager (no GUI!)..."
+CLI_URL="https://github.com/lindell/connect-iq-sdk-manager-cli/releases/download/${CLI_SDK_MANAGER_VERSION}/connect-iq-sdk-manager_${CLI_SDK_MANAGER_VERSION}_linux_amd64.tar.gz"
 
-# Step 1: Download SDK Manager
-echo "[1/4] Downloading SDK Manager..."
-if ! curl -L -f -o sdk-manager-linux.zip "${SDK_MANAGER_URL}"; then
-    echo "ERROR: Failed to download SDK Manager"
-    echo "URL: ${SDK_MANAGER_URL}"
+if ! curl -L -f -o /tmp/cli-sdk-manager.tar.gz "${CLI_URL}"; then
+    echo "ERROR: Failed to download CLI SDK Manager"
+    echo "URL: ${CLI_URL}"
     exit 1
 fi
-echo "      Downloaded: $(du -h sdk-manager-linux.zip | cut -f1)"
+
+tar -xzf /tmp/cli-sdk-manager.tar.gz -C /tmp
+chmod +x /tmp/connect-iq-sdk-manager
+echo "      CLI SDK Manager installed"
 echo ""
 
-# Step 2: Extract SDK Manager
-echo "[2/4] Extracting SDK Manager..."
-if ! unzip -q sdk-manager-linux.zip; then
-    echo "ERROR: Failed to extract SDK Manager"
-    exit 1
-fi
-echo "      Extracted successfully"
-echo ""
-
-# Step 3: Run SDK Manager to install SDK
-echo "[3/4] Installing Connect IQ SDK (this may take a few minutes)..."
-
-# SDK Manager extracts to bin/ and share/ in current directory
-if [ ! -f "bin/sdkmanager" ]; then
-    echo "ERROR: sdkmanager not found in bin/ directory"
-    echo "Contents of temp directory:"
-    ls -la
-    exit 1
-fi
-
-# Make manager executable
-chmod +x bin/sdkmanager
-
-# Install SDK - it will be placed in ~/.Garmin/ConnectIQ/Sdks/
-# Run with xvfb for headless operation (GUI required)
-echo "      Running SDK Manager with virtual display..."
-if command -v xvfb-run &> /dev/null; then
-    if ! xvfb-run -a ./bin/sdkmanager --accept-license --install linux; then
-        echo "ERROR: SDK installation failed"
-        exit 1
-    fi
+# Step 2: Accept license agreement (required)
+echo "[2/4] Accepting SDK license agreement..."
+# Generate acceptance hash by viewing agreement first
+AGREEMENT_HASH=$(/tmp/connect-iq-sdk-manager agreement view 2>&1 | grep -oP 'Agreement Hash: \K[a-f0-9]+' | head -1 || echo "")
+if [ -z "${AGREEMENT_HASH}" ]; then
+    echo "      Warning: Could not get agreement hash, using default accept"
+    /tmp/connect-iq-sdk-manager agreement accept || true
 else
-    # Try without xvfb (might fail if DISPLAY not available)
-    if ! ./bin/sdkmanager --accept-license --install linux; then
-        echo "ERROR: SDK installation failed"
-        echo "Note: SDK Manager requires GUI. Try installing xvfb."
-        exit 1
-    fi
+    echo "      Agreement hash: ${AGREEMENT_HASH}"
+    /tmp/connect-iq-sdk-manager agreement accept --agreement-hash="${AGREEMENT_HASH}"
 fi
-echo "      SDK installed successfully"
+echo "      License accepted"
 echo ""
 
-# Step 4: Find and link SDK
-echo "[4/4] Locating and linking SDK..."
+# Step 3: Download and set SDK version
+echo "[3/4] Downloading Connect IQ SDK ${SDK_VERSION}..."
+if ! /tmp/connect-iq-sdk-manager sdk set "${SDK_VERSION}"; then
+    echo "ERROR: SDK installation failed"
+    exit 1
+fi
+echo "      SDK downloaded and activated"
+echo ""
 
-# SDK Manager installs to ~/.Garmin/ConnectIQ/Sdks/
-SDK_INSTALLED_DIR="$HOME/.Garmin/ConnectIQ/Sdks"
+# Step 4: Find SDK and create symlink
+echo "[4/4] Creating SDK symlink..."
+SDK_PATH=$(/tmp/connect-iq-sdk-manager sdk current-path)
 
-if [ ! -d "${SDK_INSTALLED_DIR}" ]; then
-    echo "ERROR: SDK directory not found at ${SDK_INSTALLED_DIR}"
-    echo "Checking alternate locations..."
-    find "$HOME" -type d -name "connectiq-sdk-*" 2>/dev/null || true
+if [ -z "${SDK_PATH}" ] || [ ! -d "${SDK_PATH}" ]; then
+    echo "ERROR: SDK path not found"
     exit 1
 fi
 
-# Find the latest SDK version installed
-LATEST_SDK=$(find "${SDK_INSTALLED_DIR}" -maxdepth 1 -type d -name "connectiq-sdk-*" | sort -V | tail -n1)
+echo "      Found SDK at: ${SDK_PATH}"
 
-if [ -z "${LATEST_SDK}" ]; then
-    echo "ERROR: No SDK found in ${SDK_INSTALLED_DIR}"
-    ls -la "${SDK_INSTALLED_DIR}"
-    exit 1
-fi
-
-echo "      Found SDK: $(basename "${LATEST_SDK}")"
-
-# Create symlink to standard location
+# Create symlink
 if [ -L "${SDK_DIR}" ]; then
     rm "${SDK_DIR}"
 fi
-
-ln -s "${LATEST_SDK}" "${SDK_DIR}"
-echo "      Linked to: ${SDK_DIR}"
+ln -s "${SDK_PATH}" "${SDK_DIR}"
+echo "      Symlink created: ${SDK_DIR} -> ${SDK_PATH}"
 echo ""
 
-# Step 5: Validate installation
-echo "[5/5] Validating installation..."
-
+# Validate installation
 if [ ! -f "${SDK_DIR}/bin/monkeyc" ]; then
     echo "ERROR: monkeyc not found at ${SDK_DIR}/bin/monkeyc"
-    echo "SDK contents:"
-    ls -la "${SDK_DIR}/bin/" 2>/dev/null || echo "bin directory not found"
     exit 1
 fi
 
-echo "      monkeyc found"
-
-# Get version
 MONKEYC_VERSION=$("${SDK_DIR}/bin/monkeyc" --version 2>&1 | head -n1 || echo "unknown")
-echo "      Version: ${MONKEYC_VERSION}"
-echo ""
-
-# Cleanup
-echo "Cleaning up temporary files..."
-rm -rf "${TMP_DIR}"
 
 echo ""
 echo "============================================"
@@ -130,6 +85,7 @@ echo "✓ SDK Setup Complete!"
 echo "============================================"
 echo "SDK Location: ${SDK_DIR}"
 echo "Version:      ${MONKEYC_VERSION}"
+echo "CLI Tool:     ${CLI_SDK_MANAGER_VERSION}"
 echo ""
 echo "Environment variables:"
 echo "  export SDK_HOME=\"${SDK_DIR}\""
