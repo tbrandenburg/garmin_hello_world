@@ -1,0 +1,5 @@
+<resources>
+    <strings filename="strings/strings.xml" />
+    <layouts filename="layouts/layout.xml" />
+    <drawables filename="drawables/drawables.xml" />
+</resources>
