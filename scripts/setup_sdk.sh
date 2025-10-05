@@ -52,9 +52,20 @@ fi
 chmod +x bin/sdkmanager
 
 # Install SDK - it will be placed in ~/.Garmin/ConnectIQ/Sdks/
-if ! ./bin/sdkmanager --accept-license --install linux; then
-    echo "ERROR: SDK installation failed"
-    exit 1
+# Run with xvfb for headless operation (GUI required)
+echo "      Running SDK Manager with virtual display..."
+if command -v xvfb-run &> /dev/null; then
+    if ! xvfb-run -a ./bin/sdkmanager --accept-license --install linux; then
+        echo "ERROR: SDK installation failed"
+        exit 1
+    fi
+else
+    # Try without xvfb (might fail if DISPLAY not available)
+    if ! ./bin/sdkmanager --accept-license --install linux; then
+        echo "ERROR: SDK installation failed"
+        echo "Note: SDK Manager requires GUI. Try installing xvfb."
+        exit 1
+    fi
 fi
 echo "      SDK installed successfully"
 echo ""
