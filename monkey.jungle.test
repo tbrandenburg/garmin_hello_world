@@ -1,0 +1,7 @@
+project.manifest = manifest.test.xml
+
+# Source files - include both app source and test source
+base.sourcePath = source;tests
+
+# Resource files
+base.resourcePath = resources
