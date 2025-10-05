@@ -2,6 +2,8 @@
 
 A simple Hello World application for Garmin smartwatches using the Connect IQ platform.
 
+![20E82F67-CFDA-4BEC-B904-C16F8ACCB0BF](https://github.com/user-attachments/assets/71851cea-1c31-49b8-97d1-54f9af331be9)
+
 ## Overview
 
 This is a basic Connect IQ watch app that displays "Hello World!" on your Garmin watch. It's designed as a starting point for learning Connect IQ development and includes a complete build chain.
