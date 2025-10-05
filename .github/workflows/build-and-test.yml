@@ -29,8 +29,10 @@ jobs:
           path: |
             ~/connectiq-sdk
             ~/.Garmin/ConnectIQ/Sdks
+            ~/.Garmin/ConnectIQ/Devices
           # Include SDK version in cache key so different versions use different caches
-          key: connectiq-sdk-${{ runner.os }}-${{ env.CONNECTIQ_SDK_VERSION }}-v3
+          # v4: Added devices directory to cache
+          key: connectiq-sdk-${{ runner.os }}-${{ env.CONNECTIQ_SDK_VERSION }}-v4
           restore-keys: |
             connectiq-sdk-${{ runner.os }}-${{ env.CONNECTIQ_SDK_VERSION }}-
             connectiq-sdk-${{ runner.os }}-
@@ -64,14 +66,33 @@ jobs:
           echo "Target SDK version: $CONNECTIQ_SDK_VERSION"
           
           if [ ! -d ~/connectiq-sdk/bin ]; then
-            echo "SDK not cached, running CLI SDK Manager..."
+            echo "SDK not cached, running full setup..."
             ./scripts/setup_sdk.sh
           else
-            echo "SDK found in cache, skipping installation"
-            # Show cached SDK version
+            echo "SDK found in cache"
             if [ -f ~/connectiq-sdk/bin/monkeyc ]; then
               echo "Cached SDK version:"
               ~/connectiq-sdk/bin/monkeyc --version || echo "Could not determine version"
+            fi
+            
+            # Always verify and download devices if missing (they may not be cached)
+            if [ ! -d ~/.Garmin/ConnectIQ/Devices/fr265 ]; then
+              echo "Devices not found in cache, downloading..."
+              
+              # Install CLI SDK Manager if not present
+              if [ ! -f /tmp/connect-iq-sdk-manager ]; then
+                curl -s https://raw.githubusercontent.com/lindell/connect-iq-sdk-manager-cli/master/install.sh | sh -s -- -b /tmp
+              fi
+              
+              # Download devices
+              /tmp/connect-iq-sdk-manager device download --device fr265 --device fenix7 --device epix2 --device venu2 || {
+                echo "Warning: Bulk device download failed, trying individually..."
+                for device in fr265 fenix7 epix2 venu2; do
+                  /tmp/connect-iq-sdk-manager device download --device "${device}" || echo "Warning: Could not download ${device}"
+                done
+              }
+            else
+              echo "Devices found in cache"
             fi
           fi
           
