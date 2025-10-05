@@ -1,0 +1,73 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Cache Connect IQ SDK
+        uses: actions/cache@v4
+        with:
+          path: ~/connectiq-sdk
+          key: connectiq-sdk-linux-${{ runner.os }}-v1
+          restore-keys: |
+            connectiq-sdk-linux-${{ runner.os }}-
+      
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb shellcheck wget unzip
+      
+      - name: Setup Developer Key
+        run: |
+          mkdir -p .keys
+          echo "${{ secrets.MONKEYC_KEY_B64 }}" | base64 -d > .keys/developer_key.der
+      
+      - name: Setup Connect IQ SDK
+        run: |
+          if [ ! -d ~/connectiq-sdk/bin ]; then
+            ./scripts/setup_sdk.sh
+          fi
+          echo "$HOME/connectiq-sdk/bin" >> $GITHUB_PATH
+          echo "SDK_HOME=$HOME/connectiq-sdk" >> $GITHUB_ENV
+      
+      - name: Validate Environment
+        run: |
+          make validate
+          make devices
+          make version
+      
+      - name: Build All Devices
+        run: make buildall -j4
+      
+      - name: List Build Artifacts
+        run: |
+          echo "Build artifacts:"
+          ls -lh bin/*.prg
+      
+      - name: Run Tests
+        run: make test
+      
+      - name: Upload Test Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: logs/
+          retention-days: 30
+      
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prg-files
+          path: bin/*.prg
+          retention-days: 90

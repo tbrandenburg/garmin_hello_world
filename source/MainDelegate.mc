@@ -11,7 +11,7 @@ class HelloWorldDelegate extends Ui.BehaviorDelegate {
     function onBack() {
         Sys.println("Back button pressed - exiting app");
         Sys.exit();
-        return true;
+        // No return needed after exit
     }
 
     // Handle the select/enter button press

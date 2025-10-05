@@ -1,5 +1,15 @@
-<resources>
-    <strings filename="strings/strings.xml" />
-    <layouts filename="layouts/layout.xml" />
-    <drawables filename="drawables/drawables.xml" />
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <!-- Strings -->
+    <string id="AppName">Hello World</string>
+    <string id="HelloWorld">Hello World!</string>
+    
+    <!-- Layouts -->
+    <layout id="MainLayout">
+        <label id="label" x="center" y="center" text="@Strings.HelloWorld" justification="Gfx.TEXT_JUSTIFY_CENTER" />
+    </layout>
+    
+    <!-- Drawables -->
+    <!-- Launcher icon at 60x60 (optimal for fr265 and epix2, will scale for others) -->
+    <bitmap id="LauncherIcon" filename="drawables/launcher_icon.png" />
 </resources>

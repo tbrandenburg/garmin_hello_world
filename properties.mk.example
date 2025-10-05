@@ -1,0 +1,57 @@
+# properties.mk.example - User-Specific Build Configuration
+# Copy this file to properties.mk and customize for your environment.
+# properties.mk is ignored by git and used for local overrides.
+
+# To use this file:
+#   cp properties.mk.example properties.mk
+#   Edit properties.mk with your specific paths and preferences
+
+# =============================================================================
+# SDK Configuration
+# =============================================================================
+
+# Explicitly set SDK home if autodetection doesn't work
+# Uncomment and adjust the path below:
+# SDK_HOME := /Users/tombrandenburg/Library/Application Support/Garmin/ConnectIQ/Sdks/connectiq-sdk-mac-8.3.0-2025-09-22-5813687a0
+
+# =============================================================================
+# Developer Key
+# =============================================================================
+
+# Path to your developer signing key (default: .keys/developer_key.der)
+# PRIVATE_KEY := .keys/developer_key.der
+
+# =============================================================================
+# Build Preferences
+# =============================================================================
+
+# Default device for `make build` and `make run`
+# Options: fr265, fenix7, epix2, venu2 (or any device in manifest.xml)
+# DEFAULT_DEVICE := fr265
+
+# Number of parallel jobs for `make buildall`
+# Uncomment to override auto-detection:
+# JOBS := 8
+
+# =============================================================================
+# App Configuration
+# =============================================================================
+
+# Override app name used in build artifacts (default: directory name)
+# APP_NAME := garmin_hello_world
+
+# =============================================================================
+# Compiler Flags
+# =============================================================================
+
+# Customize compiler flags if needed
+# COMMON_FLAGS := -w
+# DEBUG_FLAGS := $(COMMON_FLAGS) -g
+# RELEASE_FLAGS := $(COMMON_FLAGS) -r -O3pz
+
+# =============================================================================
+# Notes
+# =============================================================================
+# - Most users won't need to create properties.mk; defaults work fine
+# - Use properties.mk for team-specific or machine-specific overrides
+# - Never commit properties.mk to version control
