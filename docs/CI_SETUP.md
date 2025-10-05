@@ -179,6 +179,23 @@ ls ~/.Garmin/ConnectIQ/Devices/
 2. Update secrets in GitHub repository settings
 3. Re-run workflow
 
+### Linux-Specific Build Issues
+
+**Problem:** Builds fail with "critical error" on Linux but work on macOS
+
+**Cause:** Linux monkeyc compiler requires debug symbols flag (`-g`) and
+cannot handle parallel builds (`-j` flag)
+
+**Solution:** Our Makefile includes `-g` in `DEBUG_FLAGS` by default:
+```makefile
+DEBUG_FLAGS ?= $(COMMON_FLAGS) -g  # -g required for Linux builds
+```
+
+CI uses sequential builds (no `-j` flag) for reliability on Linux.
+
+**Note:** `BUILD_MODE=release` may fail on Linux because release flags don't
+include `-g` by default.
+
 ### Builds Work Locally But Fail in CI
 
 **Check these differences:**
@@ -188,6 +205,7 @@ ls ~/.Garmin/ConnectIQ/Devices/
 | SDK Version | `monkeyc --version` | Check workflow YAML | Match versions |
 | Devices | `ls ~/Library/.../Devices/` | Check CI logs | Ensure devices downloaded |
 | Developer Key | `.keys/developer_key.der` | GitHub secret | Verify secret is set |
+| Parallel Builds | `make buildall -j4` (macOS) | `make buildall` (Linux) | Use sequential in CI |
 
 ## Manual Device Installation
 
@@ -233,15 +251,21 @@ The workflow caches the SDK to speed up builds:
 
 ### Parallel Builds
 
-Builds run in parallel for faster completion:
+**⚠️ Important:** Parallel builds work on macOS but **fail on Linux CI** with
+"critical errors" from the compiler. The workflow uses sequential builds for
+reliability.
 
 ```bash
-make buildall -j4  # 4 parallel jobs
+# CI uses sequential builds (reliable)
+make buildall
+
+# Local macOS can use parallel (faster)
+make buildall -j4
 ```
 
 **Build times:**
-- Sequential: ~20-30 seconds for 4 devices
-- Parallel (-j4): ~8-10 seconds
+- Sequential: ~20-30 seconds for 4 devices (used in CI)
+- Parallel (-j4): ~8-10 seconds (macOS only, not used in CI)
 
 ## Best Practices
 

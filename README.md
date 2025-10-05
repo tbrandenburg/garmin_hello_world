@@ -43,7 +43,7 @@ export PATH="$SDK_HOME/bin:$PATH"
 2. Install Connect IQ SDK and Simulator via SDK Manager
 3. Set up environment variables (see [docs/BUILD.md](docs/BUILD.md) for details)
 
-**See [docs/SDK_SETUP.md](docs/SDK_SETUP.md) for detailed setup instructions.**
+**See [docs/CI_SETUP.md](docs/CI_SETUP.md) for detailed setup instructions.**
 
 ### Building
 
@@ -68,7 +68,7 @@ monkeydo bin/garmin_hello_world_fr265.prg fr265
 
 ## Documentation
 
-- **[docs/SDK_SETUP.md](docs/SDK_SETUP.md)** - Complete SDK setup guide (CLI Manager, versions, CI/CD) ⭐
+- **[docs/CI_SETUP.md](docs/CI_SETUP.md)** - Complete SDK setup guide (CLI Manager, versions, CI/CD) ⭐
 - **[docs/BUILD.md](docs/BUILD.md)** - Detailed build and installation instructions
 - **[docs/TESTING.md](docs/TESTING.md)** - Testing guide and framework documentation
 - **[docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md)** - Technical implementation details

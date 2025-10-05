@@ -238,19 +238,25 @@ make validate
 Build for all devices simultaneously:
 
 ```bash
-# Auto-detect CPU cores
+# Auto-detect CPU cores (works on macOS, may fail on Linux)
 make buildall -j
 
-# Specify job count
+# Specify job count (works on macOS, may fail on Linux)
 make buildall -j4
+
+# Sequential (reliable everywhere, including CI)
+make buildall
 
 # Silent parallel build
 make buildall -j4 2>&1 | grep -E "SUCCESS|ERROR"
 ```
 
 **Build times (4 devices):**
-- Sequential: ~20-30 seconds
-- Parallel (-j4): ~8-10 seconds
+- Sequential: ~20-30 seconds (reliable on all platforms)
+- Parallel (-j4): ~8-10 seconds (works on macOS, **fails on Linux**)
+
+**CI Note:** GitHub Actions uses sequential builds because parallel builds
+cause "critical errors" with the Linux monkeyc compiler.
 
 ### Dependency Tracking
 
@@ -302,9 +308,9 @@ jobs:
       - name: Validate
         run: make validate
       
-      # Build all devices
+      # Build all devices (sequential for Linux compatibility)
       - name: Build All
-        run: make buildall -j$(nproc)
+        run: make buildall
       
       # Upload artifacts
       - name: Upload Builds
