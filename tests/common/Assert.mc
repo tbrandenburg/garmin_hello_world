@@ -26,8 +26,13 @@ module Assert {
     }
     
     // Assert that two values are equal
+    // Note: Monkey C string comparison requires careful handling
+    // We convert both to strings and compare to handle string construction edge cases
     function assertEquals(expected, actual, message) {
-        if (expected != actual) {
+        var expectedStr = expected.toString();
+        var actualStr = actual.toString();
+        
+        if (!expectedStr.equals(actualStr)) {
             throw new AssertionError(
                 "Assertion failed: " + message + 
                 " (expected: " + expected + ", actual: " + actual + ")"

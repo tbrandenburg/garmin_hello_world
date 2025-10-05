@@ -1,5 +1,7 @@
 // StringUtil.mc - Pure string manipulation utilities
-// No Toybox dependencies - all functions are pure and testable
+// Minimal Toybox dependencies - functions are testable
+
+using Toybox.Lang as Lang;
 
 module StringUtil {
 
@@ -31,17 +33,11 @@ module StringUtil {
             return "";
         }
         
-        var firstChar = str.substring(0, 1);
-        var rest = str.substring(1, str.length());
-        
-        // Convert first character to uppercase (simple ASCII approach)
-        var code = firstChar.toCharArray()[0];
-        if (code >= 'a' && code <= 'z') {
-            code = code - 32; // Convert to uppercase
-            firstChar = code.toChar().toString();
+        if (str.length() == 1) {
+            return str.toUpper();
         }
         
-        return firstChar + rest;
+        return str.substring(0, 1).toUpper() + str.substring(1, str.length());
     }
     
     // Truncate string to maxLen characters, optionally adding "..." if truncated
