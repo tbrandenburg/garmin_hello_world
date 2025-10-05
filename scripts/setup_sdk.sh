@@ -39,17 +39,20 @@ echo ""
 
 # Step 3: Run SDK Manager to install SDK
 echo "[3/4] Installing Connect IQ SDK (this may take a few minutes)..."
-cd sdkmanager || {
-    echo "ERROR: sdkmanager directory not found"
+
+# SDK Manager extracts to bin/ and share/ in current directory
+if [ ! -f "bin/sdkmanager" ]; then
+    echo "ERROR: sdkmanager not found in bin/ directory"
+    echo "Contents of temp directory:"
     ls -la
     exit 1
-}
+fi
 
 # Make manager executable
-chmod +x sdkmanager 2>/dev/null || true
+chmod +x bin/sdkmanager
 
-# Install SDK - it will be placed in a predictable location
-if ! ./sdkmanager --accept-license --install linux; then
+# Install SDK - it will be placed in ~/.Garmin/ConnectIQ/Sdks/
+if ! ./bin/sdkmanager --accept-license --install linux; then
     echo "ERROR: SDK installation failed"
     exit 1
 fi
