@@ -136,7 +136,7 @@ jobs:
           fi
       
       - name: Build All Devices
-        run: make buildall -j4 DEBUG_LOG=1
+        run: make buildall -j4
       
       - name: List Build Artifacts
         run: |
