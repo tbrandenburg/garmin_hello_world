@@ -20,12 +20,15 @@ make test-all
 **Simulator Management** (macOS):
 
 The test system automatically manages the Connect IQ Simulator:
-- **Auto-start**: If the simulator isn't running, it will be started automatically
-- **Detection**: Checks if the simulator is already running before starting
-- **Manual control**: Use `./scripts/ensure_simulator.sh` to check status
-- **Force restart**: Use `./scripts/ensure_simulator.sh --restart` to restart the simulator
+- **Auto-restart**: **Always restarts the simulator** before tests for reliability (prevents hangs)
+- **Clean state**: Each test run starts with a fresh simulator instance
+- **No manual steps**: Just run `make test` - simulator management is automatic
+- **Manual control**: 
+  - `./scripts/ensure_simulator.sh` - Restart simulator (default)
+  - `./scripts/ensure_simulator.sh --no-restart` - Only start if not running (faster but may hang)
+  - `./scripts/ensure_simulator.sh --restart` - Force restart (same as default)
 
-No manual simulator management is needed - just run `make test`!
+**Why auto-restart?** The simulator can get stuck after the first test run. Restarting ensures clean state and prevents test hangs.
 
 ### Test Output
 

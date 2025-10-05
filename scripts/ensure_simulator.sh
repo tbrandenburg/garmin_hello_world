@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # ensure_simulator.sh - Ensure Connect IQ Simulator is running
 # Detects, starts, and validates the simulator before test execution
+#
+# Default behavior: Always restart simulator for clean state (prevents test hangs)
+# Use --no-restart flag to only start if not running (faster but may hang on rerun)
+# Use --restart or -r to force restart
 
 set -euo pipefail
 
@@ -158,6 +162,7 @@ start_simulator() {
 # Main logic
 main() {
     local force_restart=${1:-false}
+    local skip_restart=${2:-false}
     
     if [[ "${force_restart}" == "--restart" ]] || [[ "${force_restart}" == "-r" ]]; then
         print_info "Force restart requested"
@@ -166,14 +171,25 @@ main() {
         exit $?
     fi
     
-    # Check if already running
-    if is_simulator_running; then
-        print_success "Simulator is already running"
-        exit 0
+    if [[ "${force_restart}" == "--no-restart" ]] || [[ "${skip_restart}" == "true" ]]; then
+        # Only check/start if not running (old behavior)
+        if is_simulator_running; then
+            print_success "Simulator is already running"
+            exit 0
+        fi
+        print_info "Simulator is not running"
+        start_simulator
+        exit $?
     fi
     
-    # Not running, start it
-    print_info "Simulator is not running"
+    # Default behavior: Always restart for test reliability
+    if is_simulator_running; then
+        print_info "Simulator is running - restarting for clean state"
+        kill_simulator
+    else
+        print_info "Simulator is not running"
+    fi
+    
     start_simulator
     exit $?
 }
