@@ -158,6 +158,16 @@ To install on your actual Forerunner 265:
 - Ensure developer_key.der exists in .keys/
 - Regenerate key if needed (see WARP.md)
 
+## Packaging for the Connect IQ Store
+
+When you're ready to distribute the app, create an encrypted `.iq` file using the Makefile helper:
+
+```bash
+make package
+```
+
+This command performs a release build for every supported device and places the signed package in `dist/` with the current semantic version embedded in the filename (e.g., `dist/garmin_hello_world_1.0.0.iq`). Update the root `VERSION` file and the `version` attribute in `manifest.xml` before packaging so the CI validation keeps the metadata synchronized.
+
 ## Next Steps
 
 After successfully building and running the Hello World app:

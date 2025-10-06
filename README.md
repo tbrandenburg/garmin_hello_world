@@ -56,6 +56,13 @@ mkdir -p bin
 monkeyc -f monkey.jungle -d fr265 -o bin/garmin_hello_world.prg -y .keys/developer_key.der
 ```
 
+### Packaging
+
+```bash
+# Create optimized builds and a signed store package (dist/garmin_hello_world_1.0.0.iq)
+make package
+```
+
 ### Running
 
 ```bash
@@ -101,6 +108,10 @@ garmin_hello_world/
 - Fenix 7 (fenix7)
 - Epix 2 (epix2)
 - Venu 2 (venu2)
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). Update the root `VERSION` file (e.g., `1.2.3`) when you ship changes and mirror the same value in `manifest.xml`. The CI `make validate` step enforces that the manifest and `VERSION` file stay in sync so packages and metadata always advertise the same release number.
 
 ## Next Steps
 
