@@ -78,6 +78,7 @@ monkeydo bin/garmin_hello_world_fr265.prg fr265
 - **[docs/CI_SETUP.md](docs/CI_SETUP.md)** - Complete SDK setup guide (CLI Manager, versions, CI/CD) ⭐
 - **[docs/BUILD.md](docs/BUILD.md)** - Detailed build and installation instructions
 - **[docs/TESTING.md](docs/TESTING.md)** - Testing guide and framework documentation
+- **[docs/STORE_TESTING.md](docs/STORE_TESTING.md)** - How to stage settings updates in the Connect IQ Store without shipping them
 - **[docs/IMPLEMENTATION_GUIDE.md](docs/IMPLEMENTATION_GUIDE.md)** - Technical implementation details
 - **[WARP.md](WARP.md)** - Comprehensive development guide for Connect IQ
 - **resources/drawables/README.md** - Information about the launcher icon
