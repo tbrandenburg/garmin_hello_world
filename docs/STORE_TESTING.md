@@ -1,39 +1,38 @@
-# Testing Connect IQ Store Settings Updates
+# Staging Garmin Connect IQ Store Releases
 
-This guide summarizes the workflow discussed in the Garmin developer forum thread about verifying store-managed settings changes before allowing an update to go live. The key idea is to use the Connect IQ Store's staging flow and the review note flag to freeze approval while you test.
+Two store features help you verify updates before they reach every user:
 
-## Recommended Workflow
+| Goal | Feature to use |
+| --- | --- |
+| Test the production-bound build while preventing Garmin from publishing it | **Review note: “Do not approve”** |
+| Run a closed beta that stays hidden from the public catalog | **Version name prefixed with `BETA`** |
 
-1. **Prepare a New Build**  
-   Compile and package the watch face or app locally. Increment the version in `manifest.xml` and regenerate your `.iq` bundle so the store recognizes it as a distinct submission.
+Both options require you to upload the `.iq` package to the Connect IQ Store so you can exercise the store-managed settings and distribution pipeline.
 
-2. **Upload as a Pending Update**  
-   In the Connect IQ Store developer portal, create a new version of the app and upload the `.iq` package. Fill out the required metadata but keep the listing unchanged for the public until testing is complete.
+## “Do not approve” review note
 
-3. **Set the Review Note to “Do not approve”**  
-   In the *Review Notes* field, add a clear instruction such as **“Do not approve – internal settings test only.”** This prevents Garmin’s review team from approving and publishing the build while you evaluate the settings experience.
+Choose this path when you expect the submitted build to become the public release after you finish validation.
 
-4. **Install the Pending Version to Test Devices**  
-   Use the store’s *Test on Device* or direct download option (available to the app owner and authorized testers) to install the pending version on your watch or simulator. Because the build is staged in the store backend, you can verify the full settings flow exactly as end users will see it, including cloud-synced preferences.
+1. Upload the new version in the developer portal with its normal version name.
+2. In the *Review Notes* field, add a clear instruction such as **“Do not approve – internal testing.”**
+3. Install the pending build on devices via *Test on Device* or direct download. Iterate by replacing the package as needed; keep the note until you are satisfied.
+4. When ready to launch, remove the “Do not approve” text (and optionally message the reviewers) so Garmin can complete approval and publish the same submission.
 
-5. **Iterate as Needed**  
-   If you discover issues, replace the pending build with a new package and keep the review note flagged as “Do not approve.” Repeat installation from the store until you are satisfied with the behavior.
+**Use it when** you want Garmin to release this exact build once you give the green light.
 
-6. **Greenlight the Release**  
-   Once testing is complete, update the review note (e.g., remove the “Do not approve” instruction) and notify the reviewers that the build is ready. The Garmin team can then run their checks and publish the update.
+## `BETA` version name
 
-## Why This Matters
+Use the hidden beta channel to share a build only with designated testers.
 
-Settings that are hosted and delivered through the Connect IQ Store cannot be fully exercised offline because the store manages the configuration UI and synchronization to devices. Staging the build in the store gives you the same environment your users experience, ensuring that:
+1. Upload the build and set the *Version Name* to start with `BETA` (for example, `BETA 1.4.0`).
+2. Populate the tester list so the right Garmin accounts can see the beta listing.
+3. Provide review notes describing the scope of the beta; Garmin still runs automated checks.
+4. To promote the changes, submit a new build (or re-upload the same binary) with a standard version name that does **not** start with `BETA`.
 
-- New or renamed settings appear correctly in the Connect IQ mobile app and web store.
-- Default values, validation, and translations behave as expected.
-- Existing installations migrate without data loss.
+**Use it when** you need extended feedback from a closed group without exposing the build to the full user base.
 
-Using the “Do not approve” note keeps the pending version from being released prematurely while still allowing you to perform end-to-end validation.
+## Tips for both flows
 
-## Tips
-
-- Keep a short changelog in the review note so Garmin’s reviewers understand the context once you are ready for approval.
-- Coordinate with any beta testers: only accounts added to the tester list will see the pending build in the store.
-- After approval, double-check that the review note no longer contains “Do not approve” to avoid confusion on future submissions.
+- Keep changelog context in the review note to speed up Garmin’s review.
+- Verify that testers can install from the store; only listed accounts have access.
+- After launch, double-check that future submissions don’t accidentally retain `BETA` prefixes or “Do not approve” notes.
