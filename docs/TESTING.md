@@ -57,21 +57,19 @@ Test execution logs are saved to `logs/test_<device>_<timestamp>.log` for debugg
 
 ## Test Structure
 
-The project uses a custom test framework designed for Connect IQ:
+The project now leans on Garmin's Run No Evil (`Toybox.Test`) harness with a thin compatibility layer for our existing asserts:
 
 ```
 tests/
 ├── common/           # Shared test infrastructure
-│   ├── Assert.mc     # Assertion helpers
-│   └── TestLogger.mc # Logging utilities
+│   └── Assert.mc     # Assertion helpers (throw exceptions that Run No Evil catches)
 ├── unit/             # Unit tests for pure logic
 │   ├── TestMathUtil.mc
 │   └── TestStringUtil.mc
 ├── system/           # System/integration tests
 │   ├── TestAppLifecycle.mc
 │   └── TestUIRendering.mc
-├── TestRunner.mc     # Test orchestrator
-└── TestApp.mc        # Test app entry point
+└── TestApp.mc        # Registers a `Test.TestSuite` and executes it on startup
 ```
 
 ## Writing Unit Tests
@@ -81,50 +79,22 @@ Unit tests verify isolated, pure functions. Place them in `tests/unit/`.
 ### Template
 
 ```monkeyc
+using Toybox.Test as Test;
 using MyModule;
 using Assert;
-using TestLogger;
 
-class TestMyModule {
-    
-    function run() {
-        var passed = 0;
-        var failed = 0;
-        
-        TestLogger.logInfo("Running MyModule tests");
-        
-        passed += testMyFunction();
-        passed += testAnotherFunction();
-        
-        return {"passed" => passed, "failed" => failed};
+class MyModuleTestCase extends Test.TestCase {
+
+    function initialize() {
+        Test.TestCase.initialize(self, "MyModule");
     }
-    
+
     function testMyFunction() {
-        TestLogger.logTest("MyModule.myFunction - basic case");
-        try {
-            var result = MyModule.myFunction(10, 20);
-            Assert.assertEquals(30, result, "Should add numbers");
-            TestLogger.logPass("MyModule.myFunction - basic case");
-            return 1;
-        } catch (ex) {
-            TestLogger.logFail("MyModule.myFunction - basic case", 
-                               ex.getErrorMessage());
-            return 0;
-        }
+        Assert.assertEquals(30, MyModule.myFunction(10, 20), "Should add numbers");
     }
-    
+
     function testAnotherFunction() {
-        TestLogger.logTest("MyModule.anotherFunction - edge case");
-        try {
-            var result = MyModule.anotherFunction(null);
-            Assert.assertTrue(result != null, "Should handle null input");
-            TestLogger.logPass("MyModule.anotherFunction - edge case");
-            return 1;
-        } catch (ex) {
-            TestLogger.logFail("MyModule.anotherFunction - edge case", 
-                               ex.getErrorMessage());
-            return 0;
-        }
+        Assert.assertTrue(MyModule.anotherFunction(null) != null, "Handles null input");
     }
 }
 ```
@@ -138,11 +108,11 @@ class TestMyModule {
 
 ### Best Practices
 
-1. **One assertion per test** - Keep tests focused
+1. **One behavior per method** - Keep each `test...` function focused
 2. **Test edge cases** - Include boundary values, nulls, negatives
 3. **Use descriptive names** - `testClampBelowMin()` not `testClamp1()`
-4. **Return 1 for pass, 0 for fail** - TestRunner counts results
-5. **Catch and log exceptions** - Always wrap in try/catch
+4. **Register new cases** - Add them to `HelloWorldTestSuite` in `tests/TestApp.mc`
+5. **Let exceptions bubble** - Throwing from a test automatically marks it as failed
 
 ## Writing System Tests
 
@@ -160,49 +130,36 @@ System tests verify end-to-end behavior. Place them in `tests/system/`.
 ```monkeyc
 using Toybox.WatchUi as Ui;
 using Assert;
-using TestLogger;
+using Toybox.Test as Test;
 
-class TestMyFeature {
-    
-    function run() {
-        var passed = 0;
-        var failed = 0;
-        
-        passed += testFeatureAvailable();
-        
-        return {"passed" => passed, "failed" => failed};
+class MyFeatureSystemCase extends Test.TestCase {
+
+    function initialize() {
+        Test.TestCase.initialize(self, "MyFeatureSystem");
     }
-    
+
     function testFeatureAvailable() {
-        TestLogger.logTest("Feature is accessible");
-        try {
-            // Test that feature can be instantiated
-            var feature = new MyFeature();
-            Assert.assertTrue(feature != null, "Feature should exist");
-            TestLogger.logPass("Feature is accessible");
-            return 1;
-        } catch (ex) {
-            TestLogger.logFail("Feature is accessible", ex.getErrorMessage());
-            return 0;
-        }
+        var feature = new MyFeature();
+        Assert.assertTrue(feature != null, "Feature should exist");
+        Assert.assertTrue(feature instanceof Ui.View, "Feature renders via Ui.View");
     }
 }
 ```
 
 ## Registering Tests
 
-After creating a test class, register it in `tests/TestRunner.mc`:
+After creating a test case, register it with the suite in `tests/TestApp.mc`:
 
 ```monkeyc
-var testSuites = [
-    // Unit tests
-    {"name" => "TestMathUtil", "instance" => new TestMathUtil()},
-    {"name" => "TestStringUtil", "instance" => new TestStringUtil()},
-    {"name" => "TestMyModule", "instance" => new TestMyModule()},  // Add here
-    // System tests
-    {"name" => "TestAppLifecycle", "instance" => new TestAppLifecycle()},
-    ...
-];
+class HelloWorldTestSuite extends Test.TestSuite {
+
+    function initialize() {
+        Test.TestSuite.initialize(self, "GarminHelloWorld");
+        addTest(new MathUtilTestCase());
+        addTest(new StringUtilTestCase());
+        addTest(new MyFeatureSystemCase()); // Register new case here
+    }
+}
 ```
 
 ## Troubleshooting
@@ -241,13 +198,13 @@ var testSuites = [
 
 ### No Test Output
 
-**Problem:** Tests run but no `[TEST]` markers appear
+**Problem:** Tests run but no structured output appears in the simulator
 
 **Solutions:**
-- Verify TestLogger is imported: `using TestLogger;`
-- Check log file location: `logs/test_<device>_<timestamp>.log`
-- Ensure TestRunner is calling `run()` on each suite
-- Try running test app directly: `monkeydo bin/test_fr265.prg fr265`
+- Confirm the test app was launched with the `--unit-test` flag (or via the Unit Tests panel)
+- Ensure your case extends `Test.TestCase` and throws on failure
+- Verify the case is added to `HelloWorldTestSuite`
+- Run the test app directly to inspect logs: `monkeydo bin/test_fr265.prg fr265`
 
 ## Coverage
 

@@ -663,34 +663,26 @@ Test various scenarios:
 ## Testing Strategy
 
 ### Reality Check
-Connect IQ lacks official unit testing and code coverage tools. Our strategy focuses on:
+Garmin's official Connect IQ unit-testing workflow is now part of the stable SDK tooling rather than an experimental preview. We have begun leaning on that stack directly: the bespoke `TestRunner` is gone, each case extends `Test.TestCase`, and `tests/TestApp.mc` now assembles a `Test.TestSuite` that Run No Evil executes. We still use the lightweight `Assert` helpers (they simply throw `Lang.Exception` derivatives) so the transition remains gradual while we evaluate coverage tooling and headless support. Today our strategy focuses on:
 - **Logic Isolation**: Business logic in `source/util/` with minimal Toybox dependencies
-- **Simulator-driven Testing**: Custom test harness that logs PASS/FAIL results
-- **Manual UI Verification**: Visual testing in the simulator
+- **Run No Evil execution**: `HelloWorldTestSuite` registers all unit and system cases and delegates to `Test.run()` for structured simulator output
+- **Manual UI Verification**: Visual testing in the simulator when behaviour cannot be asserted programmatically
 
-### Test Harness Structure (Optional)
-```
-tests/
-├── TestRunner.mc       # Entry point that orchestrates test execution
-├── test_util_math.mc   # Tests for utility modules
-└── test_util_format.mc # More utility tests
-```
-
-### Testing Conventions
-- Log test results with standard prefixes: `[TEST]`, `[PASS]`, `[FAIL]`, `[SKIP]`
-- Parse simulator logs to determine test success/failure
-- Exit with non-zero code if any tests fail
+To add a new test you:
+1. Create a `Test.TestCase` subclass in `tests/unit/` or `tests/system/`
+2. Use `Assert.*` helpers (or native `Test` asserts) inside `test...` methods
+3. Register the case in `HelloWorldTestSuite.initialize()`
+4. Launch the suite with the simulator's Unit Tests panel or via `monkeydo bin/test_<device>.prg <device> --unit-test`
 
 ### Example Test Command
 ```bash
 DEVICE=${DEVICE:-fenix7}
 mkdir -p bin
 # Build test-enabled variant
-monkeyc -f monkey.jungle -d "${DEVICE}" -o bin/tests.prg -y "${MONKEYC_KEY}"
-# Run and capture logs
-monkeydo bin/tests.prg "${DEVICE}" | tee .last-test.log
-# Parse results (implement scripts/parse_tests.sh)
-scripts/parse_tests.sh .last-test.log
+monkeyc -f monkey.jungle.test -d "${DEVICE}" -o bin/test_${DEVICE}.prg -y "${MONKEYC_KEY}"
+# Run in unit-test mode and capture logs
+monkeydo bin/test_${DEVICE}.prg "${DEVICE}" --unit-test | tee .last-test.log
+# TODO: wire structured output parser once Garmin exposes a headless reporter
 ```
 
 ### Coverage Expectations

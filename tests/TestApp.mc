@@ -1,10 +1,21 @@
-// TestApp.mc - Test application entry point
-// Runs test harness and exits when complete
-
 using Toybox.Application as App;
-using Toybox.WatchUi as Ui;
+using Toybox.Test as Test;
 using Toybox.System as Sys;
 using Toybox.Timer;
+using Toybox.Lang as Lang;
+using Toybox.WatchUi as Ui;
+using Toybox.Graphics as Graphics;
+
+class HelloWorldTestSuite extends Test.TestSuite {
+
+    function initialize() {
+        Test.TestSuite.initialize(self, "GarminHelloWorld");
+        addTest(new MathUtilTestCase());
+        addTest(new StringUtilTestCase());
+        addTest(new AppLifecycleTestCase());
+        addTest(new UIRenderingTestCase());
+    }
+}
 
 class TestApp extends App.AppBase {
 
@@ -13,59 +24,26 @@ class TestApp extends App.AppBase {
     }
 
     function onStart(state) {
-        Sys.println("TestApp starting...");
-    }
-
-    function onStop(state) {
-        Sys.println("TestApp stopping...");
-    }
-
-    function getInitialView() {
-        // Schedule test execution shortly after app starts
         var timer = new Timer.Timer();
-        var callback = new Lang.Method(self, :runTests);
-        timer.start(callback, 100, false);
-        
-        // Return a minimal view with delegate
-        return [ new TestView(), new TestDelegate() ];
+        timer.start(new Lang.Method(self, :runTests), 100, false);
     }
-    
-    function runTests() as Void {
-        Sys.println("");
-        Sys.println("========================================");
-        Sys.println("Garmin Hello World - Test Harness");
-        Sys.println("========================================");
-        Sys.println("");
-        
-        var runner = new TestRunner();
-        var results = runner.runAll();
-        
-        Sys.println("");
-        
-        // Exit with appropriate status
-        // Note: Connect IQ doesn't have exit codes, but we can at least exit cleanly
-        if (results["failed"] == 0) {
-            Sys.println("[SUCCESS] All tests passed!");
-        } else {
-            Sys.println("[FAILURE] " + results["failed"] + " test(s) failed");
-        }
-        
-        Sys.println("");
-        Sys.println("Exiting test app...");
-        
-        // Give logs time to flush before exiting
-        var exitTimer = new Timer.Timer();
-        var callback = new Lang.Method(self, :exitApp);
-        exitTimer.start(callback, 500, false);
-    }
-    
-    function exitApp() as Void {
+
+    function runTests() {
+        var suite = new HelloWorldTestSuite();
+        Test.run(suite);
+        Sys.println("Run No Evil test suite completed");
         Sys.exit();
     }
 
+    function getInitialView() {
+        return [ new TestView(), new TestDelegate() ];
+    }
 }
 
-// Minimal view for test app
+function getApp() {
+    return App.getApp();
+}
+
 class TestView extends Ui.View {
 
     function initialize() {
@@ -80,28 +58,20 @@ class TestView extends Ui.View {
             dc.getWidth() / 2,
             dc.getHeight() / 2,
             Graphics.FONT_SMALL,
-            "Running Tests...",
+            "Run No Evil Tests",
             Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
         );
     }
-
 }
 
-// Test app delegate
 class TestDelegate extends Ui.BehaviorDelegate {
 
     function initialize() {
         BehaviorDelegate.initialize();
     }
-    
+
     function onBack() {
-        Sys.println("Back pressed - exiting tests");
         Sys.exit();
         return true;
     }
-
-}
-
-function getApp() {
-    return App.getApp();
 }
