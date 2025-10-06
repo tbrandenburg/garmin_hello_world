@@ -123,11 +123,19 @@ jobs:
       
       - name: Build All Devices
         run: make buildall  # Sequential build (parallel fails on Linux)
-      
+
       - name: List Build Artifacts
         run: |
           echo "Build artifacts:"
           ls -lh bin/*.prg
+
+      - name: Package Release Bundle
+        run: make package
+
+      - name: List Store Package
+        run: |
+          echo "Store package artifacts:"
+          ls -lh dist/*.iq
       
       # Tests require simulator GUI - skip in CI for now
       # To enable: setup xvfb-run or use headless simulator setup
@@ -148,3 +156,10 @@ jobs:
           name: prg-files
           path: bin/*.prg
           retention-days: 90
+
+      - name: Upload Store Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: iq-package
+          path: dist/*.iq
+          retention-days: 30

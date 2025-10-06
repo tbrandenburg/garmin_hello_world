@@ -42,9 +42,12 @@ The GitHub Actions workflow (`.github/workflows/build-and-test.yml`) performs th
    - Uses CLI SDK Manager (no GUI needed)
    - Downloads SDK binaries
    - **Downloads device files separately** (fr265, fenix7, epix2, venu2)
-5. **Validate environment** - Verify SDK and devices are available
-6. **Build for all devices** - Parallel builds (-j4)
-7. **Upload artifacts** - Save .prg files for 90 days
+5. **Validate environment** - Verify SDK, manifest metadata, and devices are available
+6. **Build for all devices** - Sequential builds (`make buildall`)
+7. **Create signed store package** - Runs `make package` to produce `dist/*.iq`
+8. **Upload artifacts**
+   - `.prg` binaries retained for 90 days
+   - Encrypted `.iq` package retained for 30 days
 
 ### SDK Version Strategy
 

@@ -12,8 +12,12 @@ include config.mk
 -include properties.mk
 
 # Derived metadata from manifest.xml
-APP_ENTRY := $(shell sed -n 's/.*entry="\([^"]*\)".*/\1/p' $(MANIFEST_FILE) 2>/dev/null | head -n1)
-APP_ID := $(shell sed -n 's/.*application[^"]*id="\([^"]*\)".*/\1/p' $(MANIFEST_FILE) 2>/dev/null | head -n1)
+APP_ENTRY := $(shell ./scripts/extract_manifest_attr.py "$(MANIFEST_FILE)" entry)
+APP_ID := $(shell ./scripts/extract_manifest_attr.py "$(MANIFEST_FILE)" id)
+APP_VERSION := $(shell ./scripts/extract_manifest_attr.py "$(MANIFEST_FILE)" version)
+PROJECT_VERSION_FILE ?= VERSION
+PROJECT_VERSION := $(if $(wildcard $(PROJECT_VERSION_FILE)),$(shell tr -d '\r\n' < $(PROJECT_VERSION_FILE)),)
+PROJECT_VERSION_DISPLAY := $(if $(PROJECT_VERSION),$(PROJECT_VERSION),$(C_YELLOW)Not set$(C_RESET))
 
 # Device list (extracted from manifest)
 DEVICES := $(shell ./scripts/list_devices.sh $(MANIFEST_FILE) 2>/dev/null | tr '\n' ' ')
@@ -66,12 +70,13 @@ help: ## Show this help message
 validate: ## Validate development environment
 	@printf "$(C_BLUE)[INFO]$(C_RESET) Validating environment...\n"
 	@SDK_HOME="$(SDK_HOME)" \
-	 MANIFEST_FILE="$(MANIFEST_FILE)" \
-	 JUNGLE_FILE="$(JUNGLE_FILE)" \
-	 PRIVATE_KEY="$(PRIVATE_KEY)" \
-	 MONKEYC="$(MONKEYC)" \
-	 MONKEYDO="$(MONKEYDO)" \
-	 ./scripts/validate_env.sh
+	MANIFEST_FILE="$(MANIFEST_FILE)" \
+	JUNGLE_FILE="$(JUNGLE_FILE)" \
+	PROJECT_VERSION_FILE="$(PROJECT_VERSION_FILE)" \
+	PRIVATE_KEY="$(PRIVATE_KEY)" \
+	MONKEYC="$(MONKEYC)" \
+	MONKEYDO="$(MONKEYDO)" \
+	./scripts/validate_env.sh
 
 devices: ## List all supported devices
 	@printf "$(C_BLUE)[INFO]$(C_RESET) Supported devices in $(MANIFEST_FILE):\n\n"
@@ -81,18 +86,16 @@ devices: ## List all supported devices
 	@echo ""
 	@printf "Total: $(C_BOLD)$(words $(DEVICES))$(C_RESET) devices\n\n"
 
-version: ## Show SDK and tool versions
+version: ## Show SDK, tool, and app version information
 	@printf "$(C_BLUE)[INFO]$(C_RESET) SDK and Tool Versions:\n\n"
 	@echo "SDK Home:    $(SDK_HOME)"
 	@echo "App Name:    $(APP_NAME)"
 	@echo "App Entry:   $(APP_ENTRY)"
+	@echo "App ID:      $(APP_ID)"
+	@echo "App Version: $(if $(APP_VERSION),$(APP_VERSION),$(C_RED)Unknown$(C_RESET))"
+	@echo "Project Version (VERSION): $(PROJECT_VERSION_DISPLAY)"
 	@echo ""
-	@if [ -x "$(MONKEYC)" ]; then \
-		printf "Compiler:    "; \
-		"$(MONKEYC)" --version 2>&1 | head -n1; \
-	else \
-		printf "$(C_RED)Compiler not found$(C_RESET)\n"; \
-	fi
+	@if [ -x "$(MONKEYC)" ]; then printf "Compiler:    "; "$(MONKEYC)" --version 2>&1 | head -n1; else printf "$(C_RED)Compiler not found$(C_RESET)\n"; fi
 	@echo ""
 
 #===============================================================================
@@ -158,19 +161,21 @@ test-all: validate ## Run tests for all devices
 # Packaging Target
 #===============================================================================
 
+PACKAGE_BASENAME := $(APP_NAME)$(if $(PROJECT_VERSION),_$(PROJECT_VERSION),)
+
 package: release | $(DIST_DIR) ## Create store packages (.iq files)
 	@printf "$(C_BLUE)[PACKAGE]$(C_RESET) Creating store packages...\n\n"
 	@if [ -x "$(SDK_HOME)/bin/monkeyc" ]; then \
-		printf "$(C_BLUE)[INFO]$(C_RESET) Attempting to create .iq package...\n"; \
-		"$(MONKEYC)" \
-			-f "$(JUNGLE_FILE)" \
-			-o "$(DIST_DIR)/$(APP_NAME).iq" \
-			-e \
-			-y "$(PRIVATE_KEY)" \
-			$(RELEASE_FLAGS) && \
-		printf "$(C_GREEN)[OK]$(C_RESET) Package created: $(DIST_DIR)/$(APP_NAME).iq\n\n" || \
-		( \
-			printf "$(C_RED)[ERROR]$(C_RESET) Packaging failed\n\n"; \
+	       printf "$(C_BLUE)[INFO]$(C_RESET) Attempting to create .iq package...\n"; \
+	       "$(MONKEYC)" \
+	               -f "$(JUNGLE_FILE)" \
+	               -o "$(DIST_DIR)/$(PACKAGE_BASENAME).iq" \
+	               -e \
+	               -y "$(PRIVATE_KEY)" \
+	               $(RELEASE_FLAGS) && \
+	       printf "$(C_GREEN)[OK]$(C_RESET) Package created: $(DIST_DIR)/$(PACKAGE_BASENAME).iq\n\n" || \
+	       ( \
+	               printf "$(C_RED)[ERROR]$(C_RESET) Packaging failed\n\n"; \
 			printf "$(C_YELLOW)Packaging Options:$(C_RESET)\n"; \
 			printf "  1. Use monkeyc with -e flag (attempted above)\n"; \
 			printf "  2. Use the Connect IQ IDE to export .iq file\n"; \

@@ -95,6 +95,33 @@ else
     print_ok "Found"
 fi
 
+# Check project version file
+VERSION_FILE="${PROJECT_VERSION_FILE:-VERSION}"
+print_check "Project version file ($VERSION_FILE)"
+if [ ! -f "$VERSION_FILE" ]; then
+    print_warn "Not found (create VERSION with semantic version e.g. 1.2.3)"
+else
+    PROJECT_VERSION=$(tr -d '\r\n' < "$VERSION_FILE")
+    if [[ "$PROJECT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        print_ok "Semantic version: $PROJECT_VERSION"
+    else
+        print_error "Invalid semantic version: $PROJECT_VERSION"
+    fi
+fi
+
+# Check manifest version matches VERSION file
+if [ -f "$MANIFEST_FILE" ] && [ -f "$VERSION_FILE" ]; then
+    MANIFEST_VERSION=$(sed -n 's/.*application[^>]*version="\([^"]*\)".*/\1/p' "$MANIFEST_FILE" | head -n1)
+    if [ -n "$MANIFEST_VERSION" ] && [ -n "${PROJECT_VERSION:-}" ]; then
+        print_check "Manifest version matches VERSION"
+        if [ "$MANIFEST_VERSION" = "$PROJECT_VERSION" ]; then
+            print_ok "Manifest version: $MANIFEST_VERSION"
+        else
+            print_error "Manifest version ($MANIFEST_VERSION) != VERSION ($PROJECT_VERSION)"
+        fi
+    fi
+fi
+
 # Check monkey.jungle
 JUNGLE_FILE="${JUNGLE_FILE:-monkey.jungle}"
 print_check "Build configuration ($JUNGLE_FILE)"
