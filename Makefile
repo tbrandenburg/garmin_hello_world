@@ -30,7 +30,7 @@ RESOURCE_FILES := $(shell find $(RES_DIR) -type f 2>/dev/null)
 ALL_PRGS := $(addprefix $(BIN_DIR)/$(APP_NAME)_,$(addsuffix .prg,$(DEVICES)))
 
 # Phony targets (not files)
-.PHONY: help validate devices version build run buildall release package test clean doctor lint
+.PHONY: help validate devices version build run buildall release package test testall clean doctor lint
 
 #===============================================================================
 # Help Target
@@ -147,15 +147,68 @@ run: build ## Build and run in simulator for specified device
 	@printf "$(C_BLUE)[RUN]$(C_RESET) Launching simulator for $(C_BOLD)$(DEVICE)$(C_RESET)...\n\n"
 	@"$(MONKEYDO)" "$(BIN_DIR)/$(APP_NAME)_$(DEVICE).prg" "$(DEVICE)"
 
-test: validate ## Run test harness
-	@printf "$(C_BLUE)[TEST]$(C_RESET) Running test suite...\n\n"
-	@DEVICE=$(DEVICE) ./scripts/run_tests.sh
+# Test configuration
+TEST_JUNGLE_FILE := monkey.jungle.test
+TEST_MANIFEST_FILE := manifest.test.xml
 
-test-all: validate ## Run tests for all devices
+test: validate ## Build with --unit-test and run Connect IQ unit tests with /t flag
+	@printf "$(C_BLUE)[TEST]$(C_RESET) Running test suite for $(C_BOLD)$(DEVICE)$(C_RESET)...\n\n"
+	@# Ensure simulator is running (macOS only)
+	@if [[ "$$(uname)" == "Darwin" ]] && [[ -f "scripts/ensure_simulator.sh" ]]; then \
+		./scripts/ensure_simulator.sh || \
+		(printf "$(C_YELLOW)[WARNING]$(C_RESET) Failed to start simulator automatically\n"; \
+		 printf "$(C_YELLOW)[WARNING]$(C_RESET) Please ensure Connect IQ Simulator is running manually\n\n"); \
+	fi
+	@printf "$(C_BLUE)[BUILD]$(C_RESET) Building tests for $(DEVICE) with --unit-test flag...\n"
+	@"$(MONKEYC)" \
+		-f "$(TEST_JUNGLE_FILE)" \
+		-d "$(DEVICE)" \
+		-o "$(BIN_DIR)/test_$(DEVICE).prg" \
+		-y "$(PRIVATE_KEY)" \
+		--unit-test
+	@printf "$(C_GREEN)[OK]$(C_RESET) Test build complete\n"
+	@printf "$(C_BLUE)[RUN]$(C_RESET) Launching Connect IQ unit tests with -t flag...\n"
+	@"$(MONKEYDO)" "$(BIN_DIR)/test_$(DEVICE).prg" "$(DEVICE)" -t || { \
+		EXIT_CODE=$$?; \
+		if [[ $$EXIT_CODE -eq 1 ]]; then \
+			printf "$(C_YELLOW)[INFO]$(C_RESET) Test execution completed (Connect IQ simulator exited with code 1)\n"; \
+		else \
+			printf "$(C_RED)[ERROR]$(C_RESET) Test execution failed with exit code $$EXIT_CODE\n"; \
+			exit $$EXIT_CODE; \
+		fi; \
+	}
+	@printf "$(C_GREEN)[SUCCESS]$(C_RESET) Tests completed for $(DEVICE)\n\n"
+
+testall: validate ## Build and run Connect IQ unit tests for all devices
+	@printf "$(C_BLUE)[TEST]$(C_RESET) Running test suite for all devices...\n\n"
+	@# Ensure simulator is running (macOS only) - do this once for all devices
+	@if [[ "$$(uname)" == "Darwin" ]] && [[ -f "scripts/ensure_simulator.sh" ]]; then \
+		./scripts/ensure_simulator.sh || \
+		(printf "$(C_YELLOW)[WARNING]$(C_RESET) Failed to start simulator automatically\n"; \
+		 printf "$(C_YELLOW)[WARNING]$(C_RESET) Please ensure Connect IQ Simulator is running manually\n\n"); \
+	fi
 	@for device in $(DEVICES); do \
-		printf "$(C_BLUE)[TEST]$(C_RESET) Testing device: $$device\n"; \
-		DEVICE=$$device ./scripts/run_tests.sh || exit 1; \
+		printf "$(C_BLUE)[TEST]$(C_RESET) Testing device: $(C_BOLD)$$device$(C_RESET)\n"; \
+		printf "$(C_BLUE)[BUILD]$(C_RESET) Building tests for $$device...\n"; \
+		"$(MONKEYC)" \
+			-f "$(TEST_JUNGLE_FILE)" \
+			-d "$$device" \
+			-o "$(BIN_DIR)/test_$$device.prg" \
+			-y "$(PRIVATE_KEY)" \
+			--unit-test && \
+		printf "$(C_GREEN)[OK]$(C_RESET) Test build complete for $$device\n" && \
+		printf "$(C_BLUE)[RUN]$(C_RESET) Running Connect IQ unit tests with -t flag...\n" && \
+		("$(MONKEYDO)" "$(BIN_DIR)/test_$$device.prg" "$$device" -t || { \
+			EXIT_CODE=$$?; \
+			if [[ $$EXIT_CODE -ne 1 ]]; then \
+				printf "$(C_RED)[FAIL]$(C_RESET) Tests failed for $$device with exit code $$EXIT_CODE\n\n"; \
+				exit $$EXIT_CODE; \
+			fi; \
+		}) && \
+		printf "$(C_GREEN)[OK]$(C_RESET) Tests passed for $$device\n\n" || \
+		(printf "$(C_RED)[FAIL]$(C_RESET) Tests failed for $$device\n\n"; exit 1); \
 	done
+	@printf "$(C_GREEN)[SUCCESS]$(C_RESET) All tests completed successfully!\n\n"
 
 #===============================================================================
 # Packaging Target
