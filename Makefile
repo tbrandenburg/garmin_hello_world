@@ -144,8 +144,21 @@ release: ## Build optimized releases for all devices
 #===============================================================================
 
 run: build ## Build and run in simulator for specified device
-	@printf "$(C_BLUE)[RUN]$(C_RESET) Launching simulator for $(C_BOLD)$(DEVICE)$(C_RESET)...\n\n"
-	@"$(MONKEYDO)" "$(BIN_DIR)/$(APP_NAME)_$(DEVICE).prg" "$(DEVICE)"
+	@printf "$(C_BLUE)[RUN]$(C_RESET) Launching app in Connect IQ Simulator for $(C_BOLD)$(DEVICE)$(C_RESET)...\n"
+	@printf "$(C_YELLOW)[NOTE]$(C_RESET) If this fails, please ensure Connect IQ Simulator is running manually\n\n"
+	@"$(MONKEYDO)" "$(BIN_DIR)/$(APP_NAME)_$(DEVICE).prg" "$(DEVICE)" || \
+		(printf "\n$(C_RED)[ERROR]$(C_RESET) Failed to connect to simulator\n"; \
+		 printf "$(C_YELLOW)[SOLUTION]$(C_RESET) Please:\n"; \
+		 printf "  1. Open Connect IQ Simulator manually\n"; \
+		 printf "  2. Ensure the $(DEVICE) device is available\n"; \
+		 printf "  3. Try running: make run DEVICE=$(DEVICE)\n\n"; \
+		 exit 1)
+	@printf "\n$(C_GREEN)[SUCCESS]$(C_RESET) App session completed\n\n"
+
+run-direct: build ## Build and show direct monkeydo command for manual execution
+	@printf "$(C_BLUE)[RUN-DIRECT]$(C_RESET) Manual simulation command for $(C_BOLD)$(DEVICE)$(C_RESET):\n\n"
+	@printf "  $(C_GREEN)monkeydo $(BIN_DIR)/$(APP_NAME)_$(DEVICE).prg $(DEVICE)$(C_RESET)\n\n"
+	@printf "$(C_YELLOW)[TIP]$(C_RESET) Copy and paste the command above to run the app in the simulator\n\n"
 
 # Test configuration
 TEST_JUNGLE_FILE := monkey.jungle.test
