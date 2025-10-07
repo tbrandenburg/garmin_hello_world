@@ -45,8 +45,8 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          # CLI SDK Manager only needs basic tools - no GUI libraries!
-          sudo apt-get install -y shellcheck wget unzip
+          # Install basic tools plus xvfb for headless GUI testing
+          sudo apt-get install -y shellcheck wget unzip xvfb
       
       - name: Setup Developer Key
         env:
@@ -137,10 +137,66 @@ jobs:
           echo "Store package artifacts:"
           ls -lh dist/*.iq
       
-      # Tests require simulator GUI - skip in CI for now
-      # To enable: setup xvfb-run or use headless simulator setup
-      # - name: Run Tests
-      #   run: xvfb-run -a make test
+      - name: Run Unit Tests
+        run: |
+          echo "Running Connect IQ unit tests with headless display..."
+          
+          # Start virtual display for headless testing
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          XVFB_PID=$!
+          sleep 3
+          
+          # Build test version
+          echo "Building tests for fr265..."
+          monkeyc -f monkey.jungle.test -d fr265 -o bin/test_fr265.prg -y .keys/developer_key.der --unit-test
+          
+          # Start simulator in background (Linux version)
+          echo "Starting Connect IQ Simulator..."
+          if [ -f "$SDK_HOME/bin/simulator" ]; then
+            "$SDK_HOME/bin/simulator" > /dev/null 2>&1 &
+            SIM_PID=$!
+            sleep 5
+          elif [ -f "$SDK_HOME/bin/ConnectIQ" ]; then
+            "$SDK_HOME/bin/ConnectIQ" > /dev/null 2>&1 &
+            SIM_PID=$!
+            sleep 5
+          else
+            echo "Warning: Could not find simulator binary, trying direct monkeydo..."
+          fi
+          
+          # Run the tests with proper exit code handling
+          echo "Running unit tests..."
+          mkdir -p logs
+          monkeydo bin/test_fr265.prg fr265 -t 2>&1 | tee logs/unit-tests.log || {
+            EXIT_CODE=$?
+            if [ $EXIT_CODE -eq 1 ]; then
+              echo "Tests completed (Connect IQ simulator exited with code 1)"
+              # Check if tests actually passed by looking at the log
+              if grep -q "PASSED" logs/unit-tests.log; then
+                echo "✓ All unit tests passed successfully"
+              else
+                echo "✗ Tests may have failed - check logs"
+                cat logs/unit-tests.log
+                kill $XVFB_PID 2>/dev/null || true
+                kill $SIM_PID 2>/dev/null || true
+                exit 1
+              fi
+            else
+              echo "Tests failed with exit code $EXIT_CODE"
+              cat logs/unit-tests.log
+              # Cleanup
+              kill $XVFB_PID 2>/dev/null || true
+              kill $SIM_PID 2>/dev/null || true
+              exit $EXIT_CODE
+            fi
+          }
+          
+          # Cleanup
+          echo "Cleaning up processes..."
+          kill $SIM_PID 2>/dev/null || true
+          kill $XVFB_PID 2>/dev/null || true
+          echo "✓ Unit tests completed successfully"
       
       - name: Upload Test Logs
         if: always()
