@@ -47,17 +47,27 @@ module StringUtil {
             return "";
         }
         
-        if (str.length() <= maxLen) {
+        // If addEllipsis is false and string fits, return as-is
+        if (!addEllipsis && str.length() <= maxLen) {
             return str;
         }
         
+        // If addEllipsis is true, check if we can fit string + ellipsis
         if (addEllipsis) {
-            // Reserve 3 chars for "..." if maxLen allows
+            // If string is short enough that we don't need ellipsis, return as-is
+            if (str.length() < maxLen) {
+                return str;
+            }
+            
+            // String needs truncation to make room for ellipsis
             if (maxLen <= 3) {
+                // Not enough room for ellipsis, just truncate
                 return str.substring(0, maxLen);
             }
+            // Truncate and add ellipsis
             return str.substring(0, maxLen - 3) + "...";
         } else {
+            // No ellipsis, just truncate if needed
             return str.substring(0, maxLen);
         }
     }
